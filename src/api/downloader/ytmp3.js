@@ -1,4 +1,4 @@
-const ytdl = require("ytdl-core");
+const ytdl = require('ytdl-core');
 
 module.exports = function(app) {
     app.get("/downloader/ytmp3", async (req, res) => {
@@ -12,6 +12,7 @@ module.exports = function(app) {
         }
 
         try {
+            // Validasi URL
             if (!ytdl.validateURL(url)) {
                 return res.status(400).json({
                     status: false,
@@ -19,9 +20,19 @@ module.exports = function(app) {
                 });
             }
 
-            const info = await ytdl.getInfo(url);
-            const format = ytdl.chooseFormat(info.formats, { filter: 'audioonly' });
-            
+            // Dapatkan info video
+            const info = await ytdl.getInfo(url, {
+                requestOptions: {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0'
+                    }
+                }
+            });
+
+            // Pilih format audio terbaik
+            const audioFormats = ytdl.filterFormats(info.formats, 'audioonly');
+            const bestAudio = audioFormats[0];
+
             res.json({
                 status: true,
                 data: {
@@ -29,10 +40,12 @@ module.exports = function(app) {
                     author: info.videoDetails.author.name,
                     duration: info.videoDetails.lengthSeconds,
                     thumbnail: info.videoDetails.thumbnails[info.videoDetails.thumbnails.length - 1].url,
-                    audio: format.url,
-                    quality: format.audioBitrate + ' kbps'
+                    audio_url: bestAudio.url,
+                    bitrate: bestAudio.audioBitrate,
+                    quality: 'highest'
                 }
             });
+
         } catch (err) {
             res.status(500).json({
                 status: false,

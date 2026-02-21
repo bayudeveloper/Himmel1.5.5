@@ -36,11 +36,6 @@
       "path": "/ai/hydromind?text=&model="
     },
     {
-      "name": "Voice Miku",
-      "desc": "Miku TTS - Text to Speech",
-      "path": "/ai/voicemiku?text=&voice="
-    },
-    {
       "name": "NanoBanana",
       "desc": "AI Image Generator - Transform images with prompts",
       "path": "/ai/nanobanana?prompt=",

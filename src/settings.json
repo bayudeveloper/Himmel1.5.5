@@ -126,11 +126,6 @@
           "path": "/search/komiku?q="
         },
         {
-          "name": "Kusonime",
-          "desc": "Search anime on Kusonime",
-          "path": "/search/kusonime?q="
-        },
-        {
           "name": "YouTube",
           "desc": "Search YouTube videos",
           "path": "/search/youtube?q="

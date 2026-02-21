@@ -3,54 +3,53 @@ const cheerio = require("cheerio");
 
 module.exports = function(app) {
     app.get("/tools/fftools", async (req, res) => {
-        if (req.query.type !== "all") {
-            return res.json({ 
-                status: false, 
-                message: "Gunakan ?type=all" 
-            });
-        }
-
         try {
-            const [charsRes, petsRes, newsRes] = await Promise.all([
-                axios.get("https://ff.garena.com/id/chars/"),
-                axios.get("https://ff.garena.com/id/pets/"),
-                axios.get("https://ff.garena.com/id/news/")
+            const [chars, pets, news] = await Promise.all([
+                axios.get('https://ff.garena.com/id/chars/'),
+                axios.get('https://ff.garena.com/id/pets/'),
+                axios.get('https://ff.garena.com/id/news/')
             ]);
 
-            const $chars = cheerio.load(charsRes.data);
-            const $pets = cheerio.load(petsRes.data);
-            const $news = cheerio.load(newsRes.data);
+            const $chars = cheerio.load(chars.data);
+            const $pets = cheerio.load(pets.data);
+            const $news = cheerio.load(news.data);
 
-            let characters = [];
-            let pets = [];
-            let news = [];
+            const characters = [];
+            const petsData = [];
+            const newsData = [];
 
-            $chars(".char-box.char-box-new").each((i, el) => {
-                characters.push($chars(el).find(".char-item-name").text().trim());
+            $chars('.char-box').each((i, el) => {
+                const name = $chars(el).find('.char-name').text().trim();
+                if (name) characters.push(name);
             });
 
-            $pets(".pet-box.pet-box-new").each((i, el) => {
-                pets.push($pets(el).find(".pet-name").text().trim());
+            $pets('.pet-box').each((i, el) => {
+                const name = $pets(el).find('.pet-name').text().trim();
+                if (name) petsData.push(name);
             });
 
-            $news(".news-item.news-elem").each((i, el) => {
-                news.push($news(el).find(".news-title").text().trim());
+            $news('.news-item').each((i, el) => {
+                const title = $news(el).find('.news-title').text().trim();
+                if (title) newsData.push(title);
             });
 
             res.json({
                 status: true,
-                total: {
-                    characters: characters.length,
-                    pets: pets.length,
-                    news: news.length,
-                },
-                data: { characters, pets, news }
+                data: {
+                    total: {
+                        characters: characters.length,
+                        pets: petsData.length,
+                        news: newsData.length
+                    },
+                    characters: characters.slice(0, 10),
+                    pets: petsData.slice(0, 10),
+                    news: newsData.slice(0, 10)
+                }
             });
-
         } catch (err) {
-            res.status(500).json({ 
-                status: false, 
-                message: err.message 
+            res.status(500).json({
+                status: false,
+                error: err.message
             });
         }
     });

@@ -1,87 +1,222 @@
 const axios = require('axios');
-const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
-const FormData = require('form-data');
 
 module.exports = function(app) {
-    const uploadDir = process.env.VERCEL ? '/tmp/uploads' : path.join(__dirname, '../../../uploads');
+    // URL Space Hugging Face Miku TTS
+    const HF_SPACE_URL = "https://john6666-mikuttis.hf.space";
     
-    if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    
-    const upload = multer({ 
-        dest: uploadDir,
-        limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-    });
+    // Cache untuk session
+    let sessionHash = null;
+    let sessionCookies = null;
 
-    app.post('/ai/voicemiku', upload.single('audio'), async (req, res) => {
+    // Edge speakers yang tersedia (4 aja)
+    const EDGE_SPEAKERS = {
+        "ja-JP-NanamiNeural-Female": "Japanese - Nanami",
+        "en-CA-ClaraNeural-Female": "English (Canada) - Clara",
+        "id-ID-GadisNeural-Female": "Indonesian - Gadis",
+        "jv-ID-SitiNeural-Female": "Javanese - Siti"
+    };
+
+    async function initSession() {
         try {
-            if (!req.file) {
-                return res.status(400).json({
-                    status: false,
-                    message: "Upload file audio pakai form-data field: audio"
-                });
+            const response = await axios.get(HF_SPACE_URL, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+            });
+            
+            const cookies = response.headers['set-cookie'];
+            if (cookies) {
+                sessionCookies = cookies.join('; ');
+            }
+            
+            sessionHash = `mikuttssession_${Date.now()}`;
+            
+            return { cookies: sessionCookies, hash: sessionHash };
+        } catch (err) {
+            console.error("Failed to get session:", err.message);
+            throw new Error("Gagal menginisialisasi session Miku TTS");
+        }
+    }
+
+    async function generateMikuTTS(text, edgeVoice = "id-ID-GadisNeural-Female") {
+        try {
+            // Validasi input
+            if (!text || text.trim() === '') {
+                throw new Error("Text harus diisi");
             }
 
-            const model = req.query.model || 'Miku';
-            
-            // Baca file audio
-            const audioFile = fs.createReadStream(req.file.path);
-            
-            // Kirim ke API voice conversion
-            const formData = new FormData();
-            formData.append('audio', audioFile);
-            formData.append('model', model);
+            if (!EDGE_SPEAKERS[edgeVoice]) {
+                throw new Error("Edge speaker tidak valid. Pilih: ja-JP-NanamiNeural-Female, en-CA-ClaraNeural-Female, id-ID-GadisNeural-Female, jv-ID-SitiNeural-Female");
+            }
 
-            const response = await axios.post('https://api.voice.ai/v1/convert', formData, {
+            // Inisialisasi session jika belum ada
+            if (!sessionHash) {
+                await initSession();
+            }
+
+            // Prediksi API endpoint Gradio
+            const predictUrl = `${HF_SPACE_URL}/run/predict`;
+            
+            // Payload dengan model FIX 1a_miku_default_rcv (model=1)
+            // Berdasarkan screenshot:
+            // Model = 1 (1a_miku_default_rvc_(apple))
+            // Tune = 6 (default)
+            // Pitch method = rmvpe (true untuk high quality)
+            // Index rate = 0.5
+            // Protect = 0.5
+            // Speed = 0
+            const payload = {
+                data: [
+                    1,           // Model FIX: 1a_miku_default_rvc_(apple)
+                    6,           // Tune value (default)
+                    true,        // rmvpe (true = high quality)
+                    0.5,         // Index rate
+                    0.5,         // Protect
+                    edgeVoice,   // Edge-tts speaker
+                    0,           // Speech speed
+                    text         // Input text
+                ],
+                event_data: null,
+                fn_index: 0,
+                session_hash: sessionHash
+            };
+
+            const response = await axios.post(predictUrl, payload, {
                 headers: {
-                    ...formData.getHeaders(),
-                    'Authorization': 'Bearer YOUR_API_KEY' // Daftar di voice.ai untuk API key
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Cookie': sessionCookies || '',
+                    'Origin': HF_SPACE_URL,
+                    'Referer': `${HF_SPACE_URL}?__theme=light`
                 },
-                timeout: 30000
+                timeout: 60000
             });
 
-            // Hapus file temporary
-            fs.unlinkSync(req.file.path);
+            // Parse response dari Gradio
+            if (response.data && response.data.data) {
+                const result = response.data.data;
+                
+                // Response biasanya berisi array:
+                // [audio_data, text_output, info_output]
+                const audioData = result[0];
+                const outputInfo = result[2] || "Success";
 
-            if (response.data && response.data.audio_url) {
-                res.json({
-                    status: true,
-                    model: model,
-                    original_file: req.file.originalname,
-                    converted_audio: response.data.audio_url,
-                    duration: response.data.duration || null
-                });
-            } else {
-                throw new Error('Failed to convert voice');
+                let audioUrl = null;
+                if (typeof audioData === 'string') {
+                    if (audioData.startsWith('data:audio')) {
+                        audioUrl = audioData;
+                    } else if (audioData.startsWith('http')) {
+                        audioUrl = audioData;
+                    }
+                }
+
+                return {
+                    success: true,
+                    text: text,
+                    model: "1a_miku_default_rvc_(apple)",
+                    edge_voice: edgeVoice,
+                    edge_voice_name: EDGE_SPEAKERS[edgeVoice],
+                    audio: audioUrl || "Audio generated",
+                    info: outputInfo
+                };
             }
+
+            throw new Error("Invalid response from Miku TTS");
 
         } catch (err) {
-            if (req.file) {
-                try { fs.unlinkSync(req.file.path); } catch (e) {}
+            console.error("Miku TTS error:", err);
+            throw new Error(`Gagal generate Miku TTS: ${err.message}`);
+        }
+    }
+
+    // POST endpoint
+    app.post('/ai/voicemiku', async (req, res) => {
+        try {
+            const { text, edge_voice } = req.body;
+
+            if (!text) {
+                return res.status(400).json({
+                    status: false,
+                    error: "Parameter 'text' wajib diisi"
+                });
             }
-            
-            // Jika API key belum diisi, beri informasi
+
+            const result = await generateMikuTTS(text, edge_voice);
+
+            res.json({
+                status: true,
+                data: result
+            });
+
+        } catch (err) {
             res.status(500).json({
                 status: false,
-                error: err.message,
-                note: "Please register at voice.ai to get API key"
+                error: err.message
             });
         }
     });
 
-    app.get('/ai/voicemiku', (req, res) => {
-        res.json({
-            status: true,
-            message: "Voice Miku API - POST dengan file audio",
-            supported_models: ["Miku", "Rin", "Len", "Luka", "KAITO", "MEIKO"],
-            usage: {
-                endpoint: "/ai/voicemiku?model=Miku",
-                method: "POST",
-                body: "form-data with field 'audio' (MP3/WAV file)"
-            }
-        });
+    // GET endpoint
+    app.get('/ai/voicemiku', async (req, res) => {
+        const { text, voice } = req.query;
+
+        if (!text) {
+            return res.json({
+                status: true,
+                name: "Miku TTS",
+                description: "Text-to-Speech dengan suara Hatsune Miku",
+                model: "1a_miku_default_rvc_(apple) (FIXED)",
+                available_voices: EDGE_SPEAKERS,
+                usage: {
+                    post: {
+                        endpoint: "/ai/voicemiku",
+                        method: "POST",
+                        body: {
+                            text: "Text yang akan diubah ke suara (wajib)",
+                            edge_voice: "Pilih: ja-JP-NanamiNeural-Female, en-CA-ClaraNeural-Female, id-ID-GadisNeural-Female, jv-ID-SitiNeural-Female (opsional, default: id-ID-GadisNeural-Female)"
+                        }
+                    },
+                    get: {
+                        endpoint: "/ai/voicemiku?text=halo&voice=id-ID-GadisNeural-Female",
+                        method: "GET"
+                    }
+                },
+                examples: [
+                    {
+                        text: "こんにちは、私の名前は初音ミクです！",
+                        voice: "ja-JP-NanamiNeural-Female"
+                    },
+                    {
+                        text: "Halo. Nama saya Hatsune Miku!",
+                        voice: "id-ID-GadisNeural-Female"
+                    },
+                    {
+                        text: "Hello there. My name is Hatsune Miku!",
+                        voice: "en-CA-ClaraNeural-Female"
+                    },
+                    {
+                        text: "Halo. Jenengku Hatsune Miku!",
+                        voice: "jv-ID-SitiNeural-Female"
+                    }
+                ]
+            });
+        }
+
+        // Generate dengan parameter dari query
+        try {
+            const validVoices = Object.keys(EDGE_SPEAKERS);
+            const selectedVoice = validVoices.includes(voice) ? voice : "id-ID-GadisNeural-Female";
+            
+            const result = await generateMikuTTS(text, selectedVoice);
+            res.json({
+                status: true,
+                data: result
+            });
+        } catch (err) {
+            res.status(500).json({
+                status: false,
+                error: err.message
+            });
+        }
     });
 };

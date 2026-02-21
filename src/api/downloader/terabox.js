@@ -1,40 +1,44 @@
 const axios = require("axios");
 
 module.exports = function(app) {
-    function extractId(link) {
-        const match = link.match(/s\/([a-zA-Z0-9]+)$|surl=([a-zA-Z0-9]+)$/);
-        return match ? (match[1] || match[2]) : null;
+    async function teraboxDownload(url) {
+        try {
+            const response = await axios.get(`https://terabox-dl.phiros.workers.dev/?url=${encodeURIComponent(url)}`, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0'
+                },
+                timeout: 30000
+            });
+
+            if (response.data && response.data.ok) {
+                return {
+                    filename: response.data.fileName,
+                    size: response.data.size,
+                    download: response.data.downloadLink
+                };
+            }
+            throw new Error('Failed to get data');
+        } catch (err) {
+            throw err;
+        }
     }
 
     app.get("/downloader/terabox", async (req, res) => {
-        const link = req.query.url;
+        const url = req.query.url;
 
-        if (!link) {
+        if (!url) {
             return res.status(400).json({
                 status: false,
                 message: "Masukkan parameter ?url="
             });
         }
 
-        const id = extractId(link);
-        if (!id) {
-            return res.status(400).json({
-                status: false,
-                message: "Link Terabox tidak valid"
-            });
-        }
-
         try {
-            // Mock response
+            const result = await teraboxDownload(url);
+            
             res.json({
                 status: true,
-                data: {
-                    filename: "file_name.mp4",
-                    size: "10 MB",
-                    id: id,
-                    download: `https://terabox.com/file/${id}`,
-                    note: "This is a mock response"
-                }
+                data: result
             });
         } catch (error) {
             res.status(500).json({

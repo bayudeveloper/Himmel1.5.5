@@ -1,19 +1,18 @@
-const axios = require('axios')
-const cheerio = require('cheerio')
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 module.exports = function(app) {
-
     async function gempa() {
-        const { data } = await axios.get('https://www.bmkg.go.id/gempabumi/gempabumi-dirasakan.bmkg')
-        const $ = cheerio.load(data)
+        const { data } = await axios.get('https://www.bmkg.go.id/gempabumi/gempabumi-dirasakan.bmkg');
+        const $ = cheerio.load(data);
 
-        const drasa = []
+        const drasa = [];
         $('table > tbody > tr:nth-child(1) > td:nth-child(6) > span').each((_, el) => {
-            let dir = $(el).text()
-            drasa.push(dir.replace('\t', ' '))
-        })
+            let dir = $(el).text();
+            drasa.push(dir.replace('\t', ' '));
+        });
 
-        let teks = drasa.join('\n')
+        let teks = drasa.join('\n');
 
         return {
             source: 'www.bmkg.go.id',
@@ -26,22 +25,21 @@ module.exports = function(app) {
                 lintang_bujur: $('table > tbody > tr:nth-child(1) > td:nth-child(3)').text(),
                 dirasakan: teks
             }
-        }
+        };
     }
 
-    app.get('/random/gempa', async (req, res) => {
+    app.get('/info/bmkg', async (req, res) => {
         try {
-            const result = await gempa()
+            const result = await gempa();
             res.status(200).json({
                 status: true,
                 result
-            })
+            });
         } catch (error) {
             res.status(500).json({
                 status: false,
                 error: error.message
-            })
+            });
         }
-    })
-
-}
+    });
+};

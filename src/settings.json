@@ -31,15 +31,100 @@
       "name": "AI (人工知能)",
       "items": [
         {
-          "name": "LuminAI",
-          "desc": "Talk with luminai",
-          "path": "/ai/luminai?text="
+          "name": "Bing AI",
+          "desc": "Generate images with Microsoft Bing AI",
+          "path": "/ai/bing?text="
         },
         {
           "name": "HydroMind",
-          "desc": "Talk with hydromind",
+          "desc": "Talk with hydromind AI",
           "path": "/ai/hydromind?text=&model=",
           "innerDesc": "See the list of supported AI models here: https://mind.hydrooo.web.id"
+        },
+        {
+          "name": "SimiSimi",
+          "desc": "Chat with SimiSimi AI",
+          "path": "/ai/simi?text=&lang="
+        },
+        {
+          "name": "Voice Miku",
+          "desc": "Miku voice cover generator",
+          "path": "/ai/voicemiku"
+        }
+      ]
+    },
+    {
+      "name": "Downloader (ダウンローダー)",
+      "items": [
+        {
+          "name": "Google Drive",
+          "desc": "Download from Google Drive link",
+          "path": "/downloader/drive?url="
+        },
+        {
+          "name": "SaveTube",
+          "desc": "Download YouTube video/audio",
+          "path": "/downloader/savetube?url=&format="
+        },
+        {
+          "name": "SoundCloud",
+          "desc": "Search tracks on SoundCloud",
+          "path": "/downloader/soundcloud?query="
+        },
+        {
+          "name": "Terabox",
+          "desc": "Download from Terabox link",
+          "path": "/downloader/terabox?url="
+        },
+        {
+          "name": "TikTok MP3",
+          "desc": "Download TikTok audio",
+          "path": "/downloader/ttmp3?url="
+        },
+        {
+          "name": "TikTok MP4",
+          "desc": "Download TikTok video",
+          "path": "/downloader/ttmp4?url="
+        },
+        {
+          "name": "YouTube MP3",
+          "desc": "Convert YouTube to MP3",
+          "path": "/downloader/ytmp3?url="
+        },
+        {
+          "name": "YouTube MP4",
+          "desc": "Download YouTube video",
+          "path": "/downloader/ytmp4?url="
+        }
+      ]
+    },
+    {
+      "name": "Information (情報)",
+      "items": [
+        {
+          "name": "Alight Motion",
+          "desc": "Get Alight Motion project info",
+          "path": "/info/alightmotion?url="
+        },
+        {
+          "name": "BMKG",
+          "desc": "Latest earthquake info from BMKG",
+          "path": "/info/bmkg"
+        },
+        {
+          "name": "Free Fire Info",
+          "desc": "Free Fire character/pet info",
+          "path": "/info/ffinfo?type=&id="
+        },
+        {
+          "name": "JKT48",
+          "desc": "JKT48 latest news",
+          "path": "/info/jkt48"
+        },
+        {
+          "name": "Weather",
+          "desc": "Weather information by city",
+          "path": "/info/weather?city="
         }
       ]
     },
@@ -47,8 +132,13 @@
       "name": "Random (ランダム)",
       "items": [
         {
+          "name": "Hentai",
+          "desc": "Random hentai images (NSFW)",
+          "path": "/random/hentai"
+        },
+        {
           "name": "Blue Archive",
-          "desc": "Blue Archive Random Images",
+          "desc": "Blue Archive random images",
           "path": "/random/ba"
         }
       ]
@@ -57,9 +147,54 @@
       "name": "Search Tools (検索ツール)",
       "items": [
         {
+          "name": "Bukalapak",
+          "desc": "Search products on Bukalapak",
+          "path": "/search/bukalapak?search="
+        },
+        {
+          "name": "Free Fire Search",
+          "desc": "Search Free Fire characters/pets/news",
+          "path": "/search/ffsearch?type="
+        },
+        {
+          "name": "Google",
+          "desc": "Google search (web/images/news/shopping)",
+          "path": "/search/google?q=&type="
+        },
+        {
+          "name": "Komiku",
+          "desc": "Search manga on Komiku",
+          "path": "/search/komiku?q="
+        },
+        {
+          "name": "Kusonime",
+          "desc": "Search anime on Kusonime",
+          "path": "/search/kusonime?q="
+        },
+        {
           "name": "YouTube",
-          "desc": "Video search",
+          "desc": "Search YouTube videos",
           "path": "/search/youtube?q="
+        }
+      ]
+    },
+    {
+      "name": "Tools (ツール)",
+      "items": [
+        {
+          "name": "Brat Generator",
+          "desc": "Generate Brat-style text images",
+          "path": "/tools/brat?text="
+        },
+        {
+          "name": "Emoji Mix",
+          "desc": "Mix two emojis",
+          "path": "/tools/emojimix?emoji1=&emoji2="
+        },
+        {
+          "name": "Free Fire Tools",
+          "desc": "Free Fire utilities",
+          "path": "/tools/fftools?type=all"
         }
       ]
     }

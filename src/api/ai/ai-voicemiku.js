@@ -52,8 +52,7 @@ module.exports = function(app) {
             if (!text) {
                 return res.status(400).json({
                     status: false,
-                    error: "Parameter 'text' wajib diisi!",
-                    example: "/ai/voicemiku?text=Hallo%20Saya%20Himmel&voice=id-ID-GadisNeural-Female"
+                    error: "Parameter 'text' wajib diisi!"
                 });
             }
 
@@ -61,25 +60,15 @@ module.exports = function(app) {
             if (!EDGE_SPEAKERS[voice]) {
                 return res.status(400).json({
                     status: false,
-                    error: "Voice tidak valid",
-                    available_voices: Object.keys(EDGE_SPEAKERS)
+                    error: "Voice tidak valid"
                 });
             }
 
-            // Langsung redirect ke audio URL (biar langsung play)
+            // Langsung redirect ke audio URL
             const audioUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(text)}`;
             
-            // Opsi 1: Redirect langsung (recommended)
+            // Redirect langsung
             return res.redirect(audioUrl);
-            
-            // Opsi 2: Kalo mau JSON response, uncomment ini:
-            /*
-            const result = await generateMikuTTS(text, voice);
-            res.json({
-                status: true,
-                data: result
-            });
-            */
 
         } catch (err) {
             res.status(500).json({
@@ -87,20 +76,5 @@ module.exports = function(app) {
                 error: err.message
             });
         }
-    });
-
-    // Endpoint info
-    app.get('/ai/voicemiku/info', (req, res) => {
-        res.json({
-            status: true,
-            name: "Miku TTS",
-            description: "Text to Speech dengan suara Miku",
-            model: "1a_miku_default_rvc_(apple)",
-            available_voices: EDGE_SPEAKERS,
-            usage: {
-                example: "/ai/voicemiku?text=Hallo%20Saya%20Himmel&voice=id-ID-GadisNeural-Female",
-                notes: "Returns audio MP3 directly (redirect)"
-            }
-        });
     });
 };

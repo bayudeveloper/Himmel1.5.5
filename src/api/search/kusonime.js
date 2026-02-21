@@ -1,114 +1,58 @@
-const cheerio = require("cheerio");
 const axios = require("axios");
+const cheerio = require("cheerio");
 
 module.exports = function(app) {
-    async function getInfo() {
-        const { data } = await axios.get("https://kusonime.com/");
-        const $ = cheerio.load(data);
-        const animeList = [];
-
-        $(".venz .detpost").each((_, el) => {
-            const element = $(el);
-
-            const title = element.find(".content h2 a").text().trim();
-            const url = element.find(".content h2 a").attr("href");
-            const thumbnail = element.find(".thumbz img").attr("src");
-
-            const genres = element
-                .find('.content p:contains("Genre") a')
-                .map((_, el) => $(el).text())
-                .get();
-
-            const releaseTime = element
-                .find('.content p:contains("Released on")')
-                .text()
-                .replace("Released on ", "")
-                .trim();
-
-            animeList.push({
-                title,
-                url,
-                thumbnail,
-                genres,
-                releaseTime
+    async function searchKusonime(query) {
+        try {
+            const { data } = await axios.get(`https://kusonime.com/?s=${encodeURIComponent(query)}`, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0'
+                }
             });
-        });
 
-        return animeList;
-    }
+            const $ = cheerio.load(data);
+            const results = [];
 
-    async function searchAnime(query) {
-        const { data } = await axios.get(
-            `https://kusonime.com/?s=${encodeURIComponent(query)}`
-        );
-
-        const $ = cheerio.load(data);
-        const results = [];
-
-        $(".venz .detpost").each((_, el) => {
-            const element = $(el);
-
-            const title = element.find(".content h2 a").text().trim();
-            const url = element.find(".content h2 a").attr("href");
-            const thumbnail = element.find(".thumbz img").attr("src");
-
-            const genres = element
-                .find('.content p:contains("Genre") a')
-                .map((_, el) => $(el).text())
-                .get();
-
-            const releaseTime = element
-                .find('.content p:contains("Released on")')
-                .text()
-                .replace("Released on ", "")
-                .trim();
-
-            results.push({
-                title,
-                url,
-                thumbnail,
-                genres,
-                releaseTime
+            $('.venz .detpost').each((i, el) => {
+                const title = $(el).find('.content h2 a').text().trim();
+                const url = $(el).find('.content h2 a').attr('href');
+                const thumbnail = $(el).find('.thumbz img').attr('src');
+                const genre = $(el).find('.content p:contains("Genre")').text().replace('Genre : ', '').trim();
+                
+                if (title && url) {
+                    results.push({
+                        title,
+                        url,
+                        thumbnail: thumbnail || null,
+                        genre: genre || 'Unknown'
+                    });
+                }
             });
-        });
 
-        return results;
+            return results;
+        } catch (err) {
+            throw err;
+        }
     }
 
     app.get("/search/kusonime", async (req, res) => {
-        try {
-            const result = await getInfo();
+        const { q } = req.query;
 
-            res.status(200).json({
-                status: true,
-                total: result.length,
-                result
-            });
-        } catch (error) {
-            res.status(500).json({
+        if (!q) {
+            return res.status(400).json({
                 status: false,
-                error: error.message
+                error: "Parameter q required"
             });
         }
-    });
 
-    app.get("/search/kusonime/search", async (req, res) => {
         try {
-            const { q } = req.query;
-
-            if (!q) {
-                return res.status(400).json({
-                    status: false,
-                    error: "Query parameter (q) is required"
-                });
-            }
-
-            const result = await searchAnime(q);
-
-            res.status(200).json({
+            const results = await searchKusonime(q);
+            
+            res.json({
                 status: true,
-                total: result.length,
-                result
+                query: q,
+                total: results.length,
+                data: results
             });
         } catch (error) {
             res.status(500).json({

@@ -13,18 +13,27 @@ module.exports = function(app) {
             const $ = cheerio.load(data);
             const results = [];
 
-            $('.venz .detpost').each((i, el) => {
-                const title = $(el).find('.content h2 a').text().trim();
-                const url = $(el).find('.content h2 a').attr('href');
-                const thumbnail = $(el).find('.thumbz img').attr('src');
-                const genre = $(el).find('.content p:contains("Genre")').text().replace('Genre : ', '').trim();
+            $('.postlist .kover').each((i, el) => {
+                const title = $(el).find('h2 a').text().trim();
+                const url = $(el).find('h2 a').attr('href');
+                const thumbnail = $(el).find('img').attr('src');
                 
+                const genres = [];
+                $(el).find('.genrenya a').each((_, g) => {
+                    genres.push($(g).text().trim());
+                });
+
+                const description = $(el).find('.deskripsi').text().trim();
+                const rating = $(el).find('.rating').text().trim();
+
                 if (title && url) {
                     results.push({
                         title,
                         url,
                         thumbnail: thumbnail || null,
-                        genre: genre || 'Unknown'
+                        genres: genres,
+                        description: description || null,
+                        rating: rating || null
                     });
                 }
             });

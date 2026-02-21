@@ -2,79 +2,128 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 
 module.exports = function(app) {
+    async function searchFFCharacters() {
+        try {
+            const { data } = await axios.get('https://ff.garena.com/id/chars/', {
+                headers: { 'User-Agent': 'Mozilla/5.0' }
+            });
+            const $ = cheerio.load(data);
+            const characters = [];
+
+            $('.char-box').each((i, el) => {
+                const name = $(el).find('.char-name').text().trim();
+                const desc = $(el).find('.char-desc').text().trim();
+                const link = $(el).find('a').attr('href');
+                const id = link?.match(/\/(\d+)$/)?.[1];
+
+                if (name) {
+                    characters.push({
+                        id: id || null,
+                        name: name,
+                        description: desc || null,
+                        link: link ? `https://ff.garena.com${link}` : null
+                    });
+                }
+            });
+
+            return characters;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    async function searchFFPets() {
+        try {
+            const { data } = await axios.get('https://ff.garena.com/id/pets/', {
+                headers: { 'User-Agent': 'Mozilla/5.0' }
+            });
+            const $ = cheerio.load(data);
+            const pets = [];
+
+            $('.pet-box').each((i, el) => {
+                const name = $(el).find('.pet-name').text().trim();
+                const desc = $(el).find('.pet-desc').text().trim();
+                const link = $(el).find('a').attr('href');
+                const id = link?.match(/\/(\d+)$/)?.[1];
+
+                if (name) {
+                    pets.push({
+                        id: id || null,
+                        name: name,
+                        description: desc || null,
+                        link: link ? `https://ff.garena.com${link}` : null
+                    });
+                }
+            });
+
+            return pets;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    async function searchFFNews() {
+        try {
+            const { data } = await axios.get('https://ff.garena.com/id/news/', {
+                headers: { 'User-Agent': 'Mozilla/5.0' }
+            });
+            const $ = cheerio.load(data);
+            const news = [];
+
+            $('.news-item').each((i, el) => {
+                const title = $(el).find('.news-title').text().trim();
+                const date = $(el).find('.news-date').text().trim();
+                const link = $(el).find('a').attr('href');
+                const image = $(el).find('img').attr('src');
+
+                if (title) {
+                    news.push({
+                        title: title,
+                        date: date || null,
+                        image: image || null,
+                        link: link ? `https://ff.garena.com${link}` : null
+                    });
+                }
+            });
+
+            return news;
+        } catch (err) {
+            throw err;
+        }
+    }
+
     app.get("/search/ffsearch", async (req, res) => {
         const { type } = req.query;
 
         if (!type) {
-            return res.json({ 
+            return res.status(400).json({ 
                 status: false, 
-                message: "Masukkan ?type=" 
+                message: "Masukkan ?type= (characters/pets/news)" 
             });
         }
 
         try {
-            let hasil = [];
-
+            let data = [];
+            
             if (type === "characters") {
-                const response = await axios.get("https://ff.garena.com/id/chars/");
-                const $ = cheerio.load(response.data);
-
-                $(".char-box.char-box-new").each((i, el) => {
-                    let name = $(el).find(".char-item-name").text();
-                    let desc = $(el).find(".char-item-desc").text();
-                    let id = $(el).find("a").attr("href");
-                    const match = id?.match(/\/(\d+)$/);
-
-                    hasil.push({
-                        name: name.trim(),
-                        desc: desc.trim(),
-                        id: match ? parseInt(match[1]) : null,
-                    });
-                });
+                data = await searchFFCharacters();
             } else if (type === "pets") {
-                const response = await axios.get("https://ff.garena.com/id/pets/");
-                const $ = cheerio.load(response.data);
-
-                $(".pet-box.pet-box-new").each((i, el) => {
-                    let name = $(el).find(".pet-name").text();
-                    let talk = $(el).find(".pet-abstract").text();
-                    let id = $(el).find("a").attr("href");
-                    const match = id?.match(/\/(\d+)$/);
-
-                    hasil.push({
-                        name: name.trim(),
-                        talk: talk.trim(),
-                        id: match ? parseInt(match[1]) : null,
-                    });
-                });
+                data = await searchFFPets();
             } else if (type === "news") {
-                const response = await axios.get("https://ff.garena.com/id/news/");
-                const $ = cheerio.load(response.data);
-
-                $(".news-item.news-elem").each((i, el) => {
-                    let time = $(el).find(".news-time").text().trim();
-                    let title = $(el).find(".news-title").text().trim();
-                    let link = $(el).find("a").attr("href");
-
-                    hasil.push({
-                        title,
-                        time,
-                        link: "https://ff.garena.com" + link,
-                    });
-                });
+                data = await searchFFNews();
             } else {
-                return res.json({ 
+                return res.status(400).json({ 
                     status: false, 
-                    message: "Type tidak valid" 
+                    message: "Type tidak valid. Pilih: characters, pets, news" 
                 });
             }
 
             res.json({ 
                 status: true, 
-                total: hasil.length, 
-                data: hasil 
+                type: type,
+                total: data.length, 
+                data: data.slice(0, 20)
             });
-
         } catch (err) {
             res.status(500).json({ 
                 status: false, 
@@ -82,4 +131,4 @@ module.exports = function(app) {
             });
         }
     });
-};;
+};

@@ -27,22 +27,29 @@
     }
   ],
   "categories": [
+ {
+  "name": "AI (人工知能)",
+  "items": [
     {
-      "name": "AI (人工知能)",
-      "items": [
-        {
-          "name": "HydroMind",
-          "desc": "Talk with hydromind AI",
-          "path": "/ai/hydromind?text=&model="
-        },
-        {
-          "name": "Voice Miku",
-          "desc": "Miku TTS - Text to Speech",
-          "path": "/ai/voicemiku?text=&voice="
-        }
-      ]
+      "name": "HydroMind",
+      "desc": "Talk with hydromind AI",
+      "path": "/ai/hydromind?text=&model="
     },
     {
+      "name": "Voice Miku",
+      "desc": "Miku TTS - Text to Speech",
+      "path": "/ai/voicemiku?text=&voice="
+    },
+    {
+      "name": "NanoBanana",
+      "desc": "AI Image Generator - Transform images with prompts",
+      "path": "/ai/nanobanana?prompt=",
+      "method": "POST",
+      "params": {
+        "prompt": "Deskripsi transformasi gambar (wajib)",
+        "image": "File gambar yang akan ditransformasi (upload)"
+        },
+        {
       "name": "Downloader (ダウンローダー)",
       "items": [
         {

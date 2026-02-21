@@ -1,65 +1,16 @@
 const axios = require('axios');
-const qs = require('qs');
 
 module.exports = function(app) {
-    class FBDown {
-        constructor() {
-            this.baseURL = 'https://y2date.com';
-            this.headers = {
-                'accept': '*/*',
-                'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
-                'origin': 'https://y2date.com',
-                'referer': 'https://y2date.com/facebook-video-downloader/',
-                'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
-                'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
-                'sec-fetch-dest': 'empty',
-                'sec-fetch-mode': 'cors',
-                'sec-fetch-site': 'same-origin',
-                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
-                'content-type': 'application/x-www-form-urlencoded'
-            };
-            this.token = '3ecace38ab99d0aa20f9560f0c9703787d4957d34d2a2d42bfe5b447f397e03c';
-        }
-
-        async getVideo(url) {
-            try {
-                const payload = qs.stringify({
-                    url: url,
-                    token: this.token
-                });
-
-                const response = await axios.post(`${this.baseURL}/wp-json/aio-dl/video-data/`, payload, {
-                    headers: this.headers,
-                    timeout: 30000
-                });
-
-                return response.data;
-            } catch (err) {
-                return {
-                    success: false,
-                    message: err.message
-                };
-            }
-        }
-    }
-
-    /**
-     * ENDPOINT: /downloader/facebook?url=FB_VIDEO_URL
-     * Method: GET
-     * Desc: Download Facebook videos via y2date.com
-     */
     app.get('/downloader/facebook', async (req, res) => {
         const { url } = req.query;
 
         if (!url) {
             return res.status(400).json({
                 status: false,
-                message: "Parameter 'url' wajib diisi! Contoh: /downloader/facebook?url=https://www.facebook.com/share/r/18Kd6fLeWP/"
+                message: "Parameter 'url' wajib diisi! Contoh: /downloader/facebook?url=https://www.facebook.com/..."
             });
         }
 
-        // Validasi URL Facebook
         if (!url.includes('facebook.com') && !url.includes('fb.watch')) {
             return res.status(400).json({
                 status: false,
@@ -68,47 +19,54 @@ module.exports = function(app) {
         }
 
         try {
-            const api = new FBDown();
-            const result = await api.getVideo(url);
+            const response = await axios.post('https://cobalt.tools/api/json', {
+                url: url,
+                vCodec: 'h264',
+                vQuality: '720',
+                aFormat: 'mp3',
+                isNoTTWatermark: true
+            }, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                timeout: 30000
+            });
 
-            if (!result || !result.success) {
+            const data = response.data;
+
+            if (data.status === 'error') {
                 return res.status(400).json({
                     status: false,
-                    message: result?.message || 'Gagal mendapatkan video'
+                    message: data.text || 'Gagal mendapatkan video'
                 });
             }
 
-            // Format response sesuai dengan struktur asli
-            const response = {
-                status: true,
-                url: url,
-                data: {
-                    title: result.title || 'Facebook Video',
-                    thumbnail: result.thumbnail || null,
-                    duration: result.duration || null
-                },
-                formats: []
-            };
-
-            // Ambil semua format video yang tersedia
-            if (result.medias && Array.isArray(result.medias)) {
-                response.formats = result.medias.map(media => ({
-                    quality: media.quality || 'Unknown',
-                    url: media.url || null,
-                    size: media.size || null
-                }));
+            if (data.status === 'stream' || data.status === 'redirect') {
+                return res.json({
+                    status: true,
+                    url: url,
+                    data: {
+                        download_url: data.url,
+                        type: 'video'
+                    }
+                });
             }
 
-            // Ambil format audio jika ada
-            if (result.audios && Array.isArray(result.audios)) {
-                response.audio = result.audios.map(audio => ({
-                    quality: audio.quality || 'Unknown',
-                    url: audio.url || null,
-                    size: audio.size || null
-                }));
+            if (data.status === 'picker') {
+                return res.json({
+                    status: true,
+                    url: url,
+                    data: data.picker.map(item => ({
+                        type: item.type,
+                        download_url: item.url,
+                        thumb: item.thumb || null
+                    }))
+                });
             }
 
-            res.json(response);
+            res.json({ status: true, url, data });
 
         } catch (err) {
             res.status(500).json({

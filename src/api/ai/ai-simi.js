@@ -2,30 +2,22 @@ const axios = require('axios');
 
 module.exports = function(app) {
     const bahasaValid = [
-        'vn','en','he','zh','ch','id','ko','ph','ru','ar',
-        'ms','es','pt','de','th','ja','fr','sv','tr','da',
-        'nb','it','nl','fi','ml','hi','kh','ca','ta','rs',
-        'mn','fa','pa','cy','hr','el','az','sw','te','pl',
-        'ro','si','fy','kk','cs','hu','lt','be','br','af',
-        'bg','is','uk','jv','eu','rw','or','al','bn','gn',
-        'kn','my','sk','gl','gu','ps','ka','et','tg','as',
-        'mr','ne','ur','uz','cx','hy','lv','sl','ku','mk',
-        'bs','ig','lb','mg','ny','sn','tt','yo','co','eo',
-        'ga','hm','hw','lo','mi','so','ug','am','gd'
+        'id', 'en', 'vn', 'he', 'zh', 'ch', 'ko', 'ph', 'ru', 'ar',
+        'ms', 'es', 'pt', 'de', 'th', 'ja', 'fr', 'sv', 'tr', 'da'
     ];
 
     app.get('/ai/simi', async (req, res) => {
-        const teks = req.query.text;
-        const bahasa = req.query.lang || 'id';
+        const text = req.query.text;
+        const lang = req.query.lang || 'id';
 
-        if (!teks) {
+        if (!text) {
             return res.status(400).json({
                 status: false,
                 message: "Masukkan parameter ?text="
             });
         }
 
-        if (!bahasaValid.includes(bahasa)) {
+        if (!bahasaValid.includes(lang)) {
             return res.status(400).json({
                 status: false,
                 message: "Bahasa tidak valid atau tidak didukung"
@@ -33,25 +25,31 @@ module.exports = function(app) {
         }
 
         try {
-            const data = new URLSearchParams();
-            data.append('text', teks);
-            data.append('lc', bahasa);
+            const formData = new URLSearchParams();
+            formData.append('text', text);
+            formData.append('lc', lang);
 
             const response = await axios.post(
                 'https://api.simsimi.vn/v2/simtalk',
-                data
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    timeout: 10000
+                }
             );
 
             res.json({
                 status: true,
-                language: bahasa,
-                reply: response.data.message
+                language: lang,
+                reply: response.data.message || response.data.msg || "No reply"
             });
 
         } catch (err) {
             res.status(500).json({
                 status: false,
-                error: err.response?.data || err.message
+                error: err.response?.data?.message || err.message
             });
         }
     });

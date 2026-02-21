@@ -1,4 +1,4 @@
-const axios = require('axios');
+const axios = require("axios");
 const { sizeFormatter } = require('human-readable');
 
 module.exports = function(app) {
@@ -9,47 +9,79 @@ module.exports = function(app) {
         render: (literal, symbol) => `${literal} ${symbol}B`
     });
 
-    async function GDriveDl(url) {
+    async function getGDriveDirectLink(url) {
         try {
-            if (!url || !url.match(/drive\.google/i)) {
-                return { error: true, message: "Invalid Google Drive URL" };
+            // Extract file ID dari berbagai format URL Google Drive
+            let fileId = null;
+            
+            // Format: https://drive.google.com/file/d/FILE_ID/view
+            const match1 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            if (match1) fileId = match1[1];
+            
+            // Format: https://drive.google.com/open?id=FILE_ID
+            const match2 = url.match(/id=([a-zA-Z0-9_-]+)/);
+            if (match2) fileId = match2[1];
+            
+            // Format: https://drive.google.com/uc?id=FILE_ID
+            const match3 = url.match(/uc\?id=([a-zA-Z0-9_-]+)/);
+            if (match3) fileId = match3[1];
+
+            if (!fileId) {
+                throw new Error("File ID tidak ditemukan");
             }
 
-            const id = (url.match(/\/?id=(.+)/i) || url.match(/\/d\/(.*?)\//))?.[1];
-            if (!id) return { error: true, message: "ID Not Found" };
+            // Dapatkan info file
+            const infoUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?key=AIzaSyA_2BARxRwnwNv5kfWthR66eS1vN0fV6tY&fields=name,size,mimeType`;
+            
+            let fileName = "Unknown";
+            let fileSize = 0;
+            let mimeType = "application/octet-stream";
 
-            const response = await axios({
-                method: "post",
-                url: `https://drive.google.com/uc?id=${id}&authuser=0&export=download`,
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-                },
-                timeout: 15000
-            });
-
-            let data;
             try {
-                data = JSON.parse(response.data.slice(4));
-            } catch {
-                return { error: true, message: "Failed to parse response" };
+                const infoResponse = await axios.get(infoUrl, { timeout: 5000 });
+                if (infoResponse.data) {
+                    fileName = infoResponse.data.name || fileName;
+                    fileSize = parseInt(infoResponse.data.size) || 0;
+                    mimeType = infoResponse.data.mimeType || mimeType;
+                }
+            } catch (err) {
+                console.log("Info fetch failed, using defaults");
             }
 
-            if (!data.downloadUrl) {
-                return { error: true, message: "Download link limit or not available" };
+            // Generate download link
+            const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+            
+            // Cek apakah file ada
+            try {
+                const headResponse = await axios.head(downloadUrl, { 
+                    timeout: 5000,
+                    maxRedirects: 0,
+                    validateStatus: (status) => status < 400
+                });
+                
+                const contentLength = headResponse.headers['content-length'];
+                if (contentLength) {
+                    fileSize = parseInt(contentLength);
+                }
+            } catch (err) {
+                // Redirect or error is expected
             }
 
             return {
                 error: false,
-                fileName: data.fileName || "Unknown",
-                fileSize: formatSize(data.sizeBytes || 0),
-                downloadUrl: data.downloadUrl
+                fileId: fileId,
+                fileName: fileName,
+                fileSize: fileSize > 0 ? formatSize(fileSize) : "Unknown",
+                mimeType: mimeType,
+                downloadUrl: downloadUrl,
+                directUrl: `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0`,
+                viewUrl: `https://drive.google.com/file/d/${fileId}/view`
             };
-            
-        } catch (e) {
+
+        } catch (error) {
             return {
                 error: true,
-                message: e.message
+                message: error.message
             };
         }
     }
@@ -64,18 +96,42 @@ module.exports = function(app) {
             });
         }
 
-        const result = await GDriveDl(url);
-
-        if (result.error) {
-            return res.status(500).json({
+        // Validasi URL Google Drive
+        if (!url.includes('drive.google.com')) {
+            return res.status(400).json({
                 status: false,
-                message: result.message || "Gagal mengambil file"
+                message: "URL harus dari Google Drive"
             });
         }
 
-        res.json({
-            status: true,
-            data: result
-        });
+        try {
+            const result = await getGDriveDirectLink(url);
+
+            if (result.error) {
+                return res.status(500).json({
+                    status: false,
+                    message: result.message
+                });
+            }
+
+            res.json({
+                status: true,
+                data: {
+                    fileId: result.fileId,
+                    fileName: result.fileName,
+                    fileSize: result.fileSize,
+                    mimeType: result.mimeType,
+                    download: result.downloadUrl,
+                    direct: result.directUrl,
+                    view: result.viewUrl
+                }
+            });
+
+        } catch (err) {
+            res.status(500).json({
+                status: false,
+                error: err.message
+            });
+        }
     });
 };

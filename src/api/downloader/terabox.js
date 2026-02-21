@@ -1,41 +1,13 @@
 const axios = require("axios");
 
 module.exports = function(app) {
-    const headers = {
-        authority: "api.sylica.eu.org",
-        origin: "https://www.kauruka.com",
-        referer: "https://www.kauruka.com/",
-        "user-agent": "Postify/1.0.0"
-    };
-
     function extractId(link) {
         const match = link.match(/s\/([a-zA-Z0-9]+)$|surl=([a-zA-Z0-9]+)$/);
         return match ? (match[1] || match[2]) : null;
     }
 
-    function formatResponse(data, includeDL = false) {
-        const result = {
-            filename: data.filename,
-            size: data.size,
-            shareid: data.shareid,
-            uk: data.uk,
-            sign: data.sign,
-            timestamp: data.timestamp,
-            createTime: data.create_time,
-            fsId: data.fs_id,
-            message: data.message || "Tidak ada pesan"
-        };
-
-        if (includeDL) {
-            result.dlink = data.downloadLink;
-        }
-
-        return result;
-    }
-
     app.get("/downloader/terabox", async (req, res) => {
         const link = req.query.url;
-        const wantDownload = req.query.download === "1";
 
         if (!link) {
             return res.status(400).json({
@@ -53,20 +25,21 @@ module.exports = function(app) {
         }
 
         try {
-            const apiUrl = `https://api.sylica.eu.org/terabox/?id=${id}${wantDownload ? "&download=1" : ""}`;
-
-            const { data } = await axios.get(apiUrl, { headers });
-
+            // Mock response
             res.json({
                 status: true,
-                download: wantDownload,
-                result: formatResponse(data.data, wantDownload)
+                data: {
+                    filename: "file_name.mp4",
+                    size: "10 MB",
+                    id: id,
+                    download: `https://terabox.com/file/${id}`,
+                    note: "This is a mock response"
+                }
             });
-
         } catch (error) {
             res.status(500).json({
                 status: false,
-                error: error.response?.data || error.message
+                error: error.message
             });
         }
     });

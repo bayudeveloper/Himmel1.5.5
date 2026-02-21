@@ -1,7 +1,10 @@
 const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
+const path = require('path');
 
-// Register font DejaVu Sans (pasti ada di Linux)
-GlobalFonts.registerFromPath('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 'DejaVu');
+GlobalFonts.registerFromPath(
+    path.join(__dirname, 'Inter_28pt-Regular.ttf'),
+    'CustomFont'
+);
 
 module.exports = function(app) {
     function generateBrat(text, size = 1080) {
@@ -9,18 +12,16 @@ module.exports = function(app) {
             const canvas = createCanvas(size, size);
             const ctx = canvas.getContext("2d");
 
-            // Background putih
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, 0, size, size);
 
-            // Hitung font size & wrap teks
             let fontSize = Math.floor(size / 6);
-            ctx.font = `bold ${fontSize}px DejaVu`;
+            ctx.font = `${fontSize}px CustomFont`;
             ctx.fillStyle = "#000000";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
-            // Word wrap supaya teks panjang tetap muat
+            // Word wrap
             const maxWidth = size * 0.85;
             const words = text.split(' ');
             const lines = [];
@@ -38,7 +39,6 @@ module.exports = function(app) {
             }
             if (currentLine) lines.push(currentLine);
 
-            // Gambar tiap baris di tengah
             const lineHeight = fontSize * 1.2;
             const totalHeight = lines.length * lineHeight;
             const startY = (size - totalHeight) / 2 + lineHeight / 2;

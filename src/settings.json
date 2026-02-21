@@ -44,6 +44,11 @@
       "name": "Downloader (ダウンローダー)",
       "items": [
         {
+"name": "Facebook",
+"desc": "Download Facebook videos",
+"path": "/downloader/facebook?url="
+        },
+        {
           "name": "Google Drive",
           "desc": "Download from Google Drive link",
           "path": "/downloader/drive?url="

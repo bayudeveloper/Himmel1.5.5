@@ -1,21 +1,73 @@
 const axios = require("axios");
+const crypto = require("crypto");
 
 module.exports = function(app) {
-    const formatVideo = ['144', '240', '360', '480', '720', '1080'];
-    const formatAudio = ['mp3', 'm4a', 'webm', 'aac'];
+    const API_URL = "https://api.savetube.me/v1";
+    const CDN_URL = "https://cdn.savetube.me";
 
-    function extractYoutubeId(url) {
-        const patterns = [
-            /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-            /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-            /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-            /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
-        ];
-        for (let pattern of patterns) {
-            const match = url.match(pattern);
-            if (match) return match[1];
+    async function getCDN() {
+        try {
+            const response = await axios.get(`${API_URL}/cdn`, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0',
+                    'Origin': 'https://yt.savetube.me'
+                }
+            });
+            return response.data.cdn;
+        } catch (err) {
+            return "cdn.savetube.me";
         }
-        return null;
+    }
+
+    async function getVideoInfo(url) {
+        try {
+            const cdn = await getCDN();
+            const response = await axios.post(`https://${cdn}/api/info`, {
+                url: url
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0',
+                    'Origin': 'https://yt.savetube.me'
+                }
+            });
+            return response.data;
+        } catch (err) {
+            throw new Error("Gagal mendapatkan info video");
+        }
+    }
+
+    async function downloadVideo(url, quality = 'mp3') {
+        try {
+            const cdn = await getCDN();
+            const info = await getVideoInfo(url);
+            
+            const downloadType = quality === 'mp3' ? 'audio' : 'video';
+            const qualityValue = quality === 'mp3' ? '128' : quality;
+
+            const response = await axios.post(`https://${cdn}/api/download`, {
+                url: url,
+                type: downloadType,
+                quality: qualityValue
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0',
+                    'Origin': 'https://yt.savetube.me'
+                }
+            });
+
+            return {
+                title: info.title || "Unknown",
+                duration: info.duration || 0,
+                thumbnail: info.thumbnail || `https://i.ytimg.com/vi/${info.videoId}/maxresdefault.jpg`,
+                type: downloadType,
+                quality: quality,
+                download_url: response.data.downloadUrl || response.data.url
+            };
+        } catch (err) {
+            throw new Error("Gagal download video");
+        }
     }
 
     app.get("/downloader/savetube", async (req, res) => {
@@ -28,38 +80,11 @@ module.exports = function(app) {
             });
         }
 
-        const videoId = extractYoutubeId(url);
-        if (!videoId) {
-            return res.status(400).json({
-                status: false,
-                message: "Link YouTube tidak valid"
-            });
-        }
-
-        const isAudio = formatAudio.includes(format);
-        const isVideo = formatVideo.includes(format);
-
-        if (!isAudio && !isVideo) {
-            return res.status(400).json({
-                status: false,
-                message: "Format tidak didukung",
-                available: { video: formatVideo, audio: formatAudio }
-            });
-        }
-
         try {
-            // Mock response for now
+            const result = await downloadVideo(url, format);
             res.json({
                 status: true,
-                result: {
-                    title: "YouTube Video",
-                    id: videoId,
-                    type: isAudio ? 'audio' : 'video',
-                    format: format,
-                    thumbnail: `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
-                    download: `https://www.youtube.com/watch?v=${videoId}`,
-                    note: "This is a mock response. Actual download would be implemented here."
-                }
+                data: result
             });
         } catch (err) {
             res.status(500).json({
@@ -67,13 +92,5 @@ module.exports = function(app) {
                 error: err.message
             });
         }
-    });
-
-    app.get("/downloader/savetube/formats", (req, res) => {
-        res.json({
-            status: true,
-            video: formatVideo,
-            audio: formatAudio
-        });
     });
 };

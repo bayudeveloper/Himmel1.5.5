@@ -6,15 +6,15 @@
     <link rel="icon" href="https://files.catbox.moe/rbfc5x.jpg" type="image/jpeg">
     <title>Himmel API</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Floating Particles (ringan) -->
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
+    <!-- Clouds Animation -->
+    <div class="cloud"></div>
+    <div class="cloud"></div>
+    <div class="cloud"></div>
+    <div class="cloud"></div>
 
     <!-- Loading Screen -->
     <div id="loadingScreen">
@@ -30,47 +30,41 @@
         <div class="container">
             <a class="navbar-brand">
                 <span id="header" class="brand-text">Himmel-Apii</span>
-                <span id="versionHeader" class="brand-version">Online!</span>
+                <span id="versionHeader" class="brand-version">Online</span>
             </a>
         </div>
     </nav>
 
+    <!-- Main Content -->
     <main class="container">
-        <!-- Banner dengan efek blend -->
-        <div class="banner-section">
-            <img id="dynamicImage" class="banner-img" src="" alt="banner">
-            <div class="banner-overlay"></div>
+        <!-- Banner Image -->
+        <div class="banner-wrapper">
+            <img id="dynamicImage" class="banner" src="https://files.catbox.moe/hp1onn.jpg" alt="banner">
         </div>
 
-        <!-- Title dengan status -->
-        <div class="title-wrapper">
-            <div>
-                <h1 id="name" class="main-title">Himmel-Apii</h1>
-                <span id="version" class="version-pill">1.5.5</span>
-            </div>
-            <span class="status-badge">● Online!</span>
+        <!-- Title Section -->
+        <div class="title-section">
+            <h1 id="name" class="main-title">Himmel-Apii</h1>
+            <span id="version" class="version-badge">1.5.5</span>
         </div>
         
-        <p id="description" class="main-description">Simple and Easy-to-Use API Documentation</p>
+        <p id="description" class="description">Simple and Easy-to-Use API Documentation</p>
 
-        <!-- Links dengan style baru -->
-        <div id="apiLinks" class="links-container">
-            <a href="#" class="link-item">About Me</a>
-            <a href="#" class="link-item">Contact Me</a>
-            <a href="#" class="link-item">About Me | バニ</a>
-            <a href="#" class="link-item">Contact Me | 接触</a>
+        <!-- Links -->
+        <div id="apiLinks" class="links">
+            <a href="#">About Me</a>
+            <a href="#">Contact Me</a>
+            <a href="#">About Me | バニ</a>
+            <a href="#">Contact Me | 接触</a>
         </div>
 
-        <!-- Search dengan icon -->
-        <div class="search-container">
-            <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18">
-                <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-            </svg>
+        <!-- Search -->
+        <div class="search-wrapper">
             <input type="text" id="searchInput" placeholder="Search API...">
         </div>
 
         <!-- API Content -->
-        <div id="apiContent" class="api-grid"></div>
+        <div id="apiContent" class="api-content"></div>
     </main>
 
     <!-- Modal -->
@@ -80,20 +74,20 @@
                 <div class="modal-header">
                     <div>
                         <h5 class="modal-title" id="apiResponseModalLabel"></h5>
-                        <p class="modal-desc" id="apiResponseModalDesc"></p>
+                        <p class="modal-subtitle" id="apiResponseModalDesc"></p>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <pre id="apiEndpoint" class="code-preview"></pre>
-                    <div id="apiQueryInputContainer" class="query-container"></div>
-                    <div id="apiResponseLoading" class="spinner-center d-none">
-                        <div class="spinner-circle"></div>
+                    <pre id="apiEndpoint" class="code-block"></pre>
+                    <div id="apiQueryInputContainer"></div>
+                    <div id="apiResponseLoading" class="spinner-wrapper d-none">
+                        <div class="spinner"></div>
                     </div>
-                    <pre id="apiResponseContent" class="code-preview d-none"></pre>
+                    <pre id="apiResponseContent" class="code-block d-none"></pre>
                 </div>
                 <div class="modal-footer">
-                    <button id="submitQueryBtn" class="submit-btn">Submit</button>
+                    <button id="submitQueryBtn" class="btn-submit">Submit</button>
                 </div>
             </div>
         </div>

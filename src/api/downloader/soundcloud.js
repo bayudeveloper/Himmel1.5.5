@@ -2,35 +2,33 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 
 module.exports = function(app) {
-    async function scrapeSoundCloud(query) {
+    async function searchSoundCloud(query) {
         try {
-            const url = `https://m.soundcloud.com/search?q=${encodeURIComponent(query)}`;
-            const { data } = await axios.get(url);
+            const url = `https://soundcloud.com/search?q=${encodeURIComponent(query)}`;
+            const { data } = await axios.get(url, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                timeout: 10000
+            });
 
             const $ = cheerio.load(data);
             let results = [];
 
-            $(".List_VerticalList__2uQYU li").each((index, element) => {
-                const title = $(element)
-                    .find(".Cell_CellLink__3yLVS")
-                    .attr("aria-label");
-
-                const href = $(element)
-                    .find(".Cell_CellLink__3yLVS")
-                    .attr("href");
-
-                if (title && href) {
+            $('li').each((i, el) => {
+                const title = $(el).find('a').attr('aria-label');
+                const href = $(el).find('a').attr('href');
+                
+                if (title && href && href.includes('/')) {
                     results.push({
-                        title,
-                        url: "https://m.soundcloud.com" + href
+                        title: title,
+                        url: href.startsWith('http') ? href : `https://soundcloud.com${href}`
                     });
                 }
             });
 
-            return results.slice(0, 5);
-
+            return results.slice(0, 10);
         } catch (error) {
-            console.error("Error scraping:", error.message);
             return [];
         }
     }
@@ -46,12 +44,12 @@ module.exports = function(app) {
         }
 
         try {
-            const results = await scrapeSoundCloud(query);
+            const results = await searchSoundCloud(query);
 
             res.json({
                 status: true,
                 total: results.length,
-                result: results
+                data: results
             });
 
         } catch (err) {

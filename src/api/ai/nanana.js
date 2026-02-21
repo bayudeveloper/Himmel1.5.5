@@ -1,6 +1,7 @@
 const axios = require('axios');
 const crypto = require('crypto');
 const FormData = require('form-data');
+const { Readable } = require('stream');
 
 class TempMailScraper {
     constructor() {
@@ -136,14 +137,32 @@ class Nanana {
     }
 
     async uploadImage(imageUrl) {
-        // Upload via URL langsung (cocok untuk API tanpa file upload lokal)
+        // Download dulu imagenya, lalu upload sebagai multipart/form-data
+        const imgResponse = await axios.get(imageUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000
+        });
+
+        const buffer = Buffer.from(imgResponse.data);
+        const contentType = imgResponse.headers['content-type'] || 'image/jpeg';
+        const ext = contentType.split('/')[1]?.split(';')[0] || 'jpg';
+        const filename = `upload_${Date.now()}.${ext}`;
+
+        const form = new FormData();
+        const stream = Readable.from(buffer);
+        form.append('image', stream, {
+            filename,
+            contentType,
+            knownLength: buffer.length
+        });
+
         const response = await axios.post(
             `${this.baseUrl}/api/upload-img`,
-            { image_url: imageUrl },
+            form,
             {
                 headers: {
                     ...this.defaultHeaders,
-                    'content-type': 'application/json',
+                    ...form.getHeaders(),
                     'Cookie': this.cookieString,
                     'x-fp-id': this.generateFpId()
                 },

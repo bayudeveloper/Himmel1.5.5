@@ -1,70 +1,36 @@
 const axios = require('axios');
 
 module.exports = function(app) {
-    class SoundCloudSearch {
-        constructor() {
-            this.baseURL = 'https://m.joomods.web.id';
-            this.headers = {
-                'accept': '*/*',
-                'accept-encoding': 'gzip, deflate, br, zstd',
-                'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
-                'referer': 'https://m.joomods.web.id/',
-                'sec-ch-ua': '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
-                'sec-ch-ua-mobile': '?1',
-                'sec-ch-ua-platform': '"Android"',
-                'user-agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36'
-            };
-        }
-
-        async search(query) {
-            try {
-                const response = await axios({
-                    method: 'GET',
-                    url: `${this.baseURL}/api/music`,
-                    headers: this.headers,
-                    params: {
-                        alicia: query
-                    },
-                    timeout: 15000
-                });
-
-                return response.data;
-            } catch (err) {
-                return {
-                    status: false,
-                    message: err.message
-                };
-            }
-        }
-    }
-
-    /**
-     * ENDPOINT: /downloader/soundcloud/search?q=tabola%20bale
-     * Method: GET
-     * Desc: Search SoundCloud tracks
-     */
     app.get('/downloader/soundcloud/search', async (req, res) => {
         const { q } = req.query;
 
         if (!q) {
             return res.status(400).json({
                 status: false,
-                message: "Parameter 'q' wajib diisi! Contoh: /downloader/soundcloud/search?q=tabola bale"
+                message: "Parameter 'q' wajib diisi! Contoh: /downloader/soundcloud/search?q=nama+lagu"
             });
         }
 
         try {
-            const api = new SoundCloudSearch();
-            const result = await api.search(q);
+            // Pakai SoundCloud API publik via scraping
+            const response = await axios.get('https://api-v2.soundcloud.com/search/tracks', {
+                params: {
+                    q: q,
+                    limit: 10,
+                    offset: 0,
+                    linked_partitioning: 1,
+                    client_id: 'a3e059563d7fd3372b49b37f00a00bcf' // public client_id
+                },
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept': 'application/json'
+                },
+                timeout: 15000
+            });
 
-            if (!result.status) {
-                return res.status(400).json({
-                    status: false,
-                    message: result.message || 'Gagal mencari musik'
-                });
-            }
+            const tracks = response.data.collection;
 
-            if (!result.result || result.result.length === 0) {
+            if (!tracks || tracks.length === 0) {
                 return res.status(404).json({
                     status: false,
                     message: `Tidak ada hasil untuk "${q}"`
@@ -74,19 +40,22 @@ module.exports = function(app) {
             res.json({
                 status: true,
                 query: q,
-                total: result.result.length,
-                data: result.result.map(item => ({
-                    title: item.title,
-                    url: item.url,
-                    duration: item.duration || 'Unknown',
-                    thumbnail: item.thumbnail || null
+                total: tracks.length,
+                data: tracks.map(track => ({
+                    title: track.title,
+                    artist: track.user?.username || 'Unknown',
+                    url: track.permalink_url,
+                    duration: track.duration,
+                    thumbnail: track.artwork_url || null,
+                    plays: track.playback_count || 0
                 }))
             });
 
         } catch (err) {
+            // Fallback jika client_id expired
             res.status(500).json({
                 status: false,
-                error: err.message
+                error: 'SoundCloud API error: ' + err.message
             });
         }
     });

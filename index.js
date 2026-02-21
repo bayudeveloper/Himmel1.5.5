@@ -3,10 +3,9 @@ const chalk = require('chalk');
 const fs = require('fs');
 const cors = require('cors');
 const path = require('path');
+const app = express();
 const fileUpload = require('express-fileupload');
 app.use(fileUpload());
-const app = express();
-
 // Error handlers
 process.on('uncaughtException', (err) => {
     console.error(chalk.bgRed.white(' Uncaught Exception: '), err);

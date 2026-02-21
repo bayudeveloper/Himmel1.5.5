@@ -2,97 +2,58 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 
 module.exports = function(app) {
-    async function searchKomiku(type = "manga", name) {
-        const { data } = await axios.get(
-            `https://api.komiku.id/?post_type=${type}&s=${name}&APIKEY=undefined`
-        );
-
-        const $ = cheerio.load(data);
-        const mangaList = [];
-
-        $(".bge").each((_, elem) => {
-            const title = $(elem).find("h3").text().trim();
-            const genre = $(elem).find(".tpe1_inf b").text().trim();
-            const description = $(elem).find("p").text().trim();
-            const imageUrl = $(elem).find("img").attr("src");
-            const mangaUrl = $(elem).find("a").attr("href");
-
-            mangaList.push({
-                title,
-                genre,
-                description,
-                img: imageUrl,
-                url: mangaUrl ? "https://komiku.id/" + mangaUrl : null
+    async function searchKomiku(query) {
+        try {
+            const { data } = await axios.get(`https://komiku.id/?s=${encodeURIComponent(query)}`, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0'
+                }
             });
-        });
 
-        return mangaList;
-    }
+            const $ = cheerio.load(data);
+            const results = [];
 
-    async function getDetail(url) {
-        const { data } = await axios.get(url);
-        const $ = cheerio.load(data);
+            $('.daftar .bge').each((i, el) => {
+                const title = $(el).find('h3').text().trim();
+                const url = $(el).find('a').attr('href');
+                const image = $(el).find('img').attr('src');
+                const genre = $(el).find('.genre').text().trim();
+                
+                if (title && url) {
+                    results.push({
+                        title,
+                        url,
+                        image: image || null,
+                        genre: genre || 'Unknown'
+                    });
+                }
+            });
 
-        const genres = [];
-        $("ul.genre li").each((_, el) => {
-            genres.push($(el).text().trim());
-        });
-
-        return {
-            title: $('span[itemprop="name"]').text().trim(),
-            description: $('p[itemprop="description"]').text().trim(),
-            awalChapter: $('a[title*="Chapter 01"]').text().trim(),
-            newChapter: $('a[title*="Chapter"]').last().text().trim(),
-            coverImage: $('img[itemprop="image"]').attr("src"),
-            genres
-        };
+            return results;
+        } catch (err) {
+            throw err;
+        }
     }
 
     app.get("/search/komiku", async (req, res) => {
-        try {
-            const { type, q } = req.query;
+        const { q } = req.query;
 
-            if (!q) {
-                return res.status(400).json({
-                    status: false,
-                    error: "Query parameter (q) is required"
-                });
-            }
-
-            const result = await searchKomiku(type || "manga", q);
-
-            res.status(200).json({
-                status: true,
-                total: result.length,
-                result
-            });
-
-        } catch (error) {
-            res.status(500).json({
+        if (!q) {
+            return res.status(400).json({
                 status: false,
-                error: error.message
+                error: "Parameter q required"
             });
         }
-    });
 
-    app.get("/search/komiku/detail", async (req, res) => {
         try {
-            const { url } = req.query;
-
-            if (!url) {
-                return res.status(400).json({
-                    status: false,
-                    error: "URL parameter is required"
-                });
-            }
-
-            const result = await getDetail(url);
-
-            res.status(200).json({
+            const results = await searchKomiku(q);
+            
+            res.json({
                 status: true,
-                result
+                query: q,
+                total: results.length,
+                data: results
             });
-
         } catch (error) {
             res.status(500).json({
                 status: false,

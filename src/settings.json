@@ -97,15 +97,20 @@
       "name": "Tri Check",
       "desc": "Check 3 (Tri) Indonesia SIM card status",
       "path": "/info/tricheck?nomor="
-      },
-        {
+       },
+       {
+          "name": "Cek Kuota XL & Axis",
+          "desc": "Check XL/AXIS quota, package, and subscriber information",
+          "path": "/info/cekxL?nomor="
+       },
+       {
           "name": "Weather",
           "desc": "Weather information by city",
           "path": "/info/weather?city="
-        }
-      ]
-    },
-    {
+       }
+       ]
+       },
+        {
       "name": "Random (ランダム)",
       "items": [
         {

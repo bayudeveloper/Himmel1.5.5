@@ -3,6 +3,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const body = document.body;
     body.classList.add("no-scroll");
 
+    // Simulasi progress bar loading
+    let progress = 0;
+    const progressBar = document.getElementById('loadingProgressBar');
+    const progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(progressInterval);
+        }
+        if (progressBar) {
+            progressBar.style.width = Math.min(progress, 100) + '%';
+        }
+    }, 200);
+
     try {
         const settings = await fetch('/src/settings.json').then(res => res.json());
 
@@ -246,13 +260,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 modalRefs.content.classList.remove('d-none');
             }
         }
+
+        // Set progress to 100% when data is loaded
+        progress = 100;
+        if (progressBar) {
+            progressBar.style.width = '100%';
+        }
+        clearInterval(progressInterval);
+
     } catch (error) {
         console.error('Error loading settings:', error);
     } finally {
+        // Fade out loading screen after content is loaded
         setTimeout(() => {
-            loadingScreen.style.display = "none";
+            loadingScreen.classList.add('fade-out');
             body.classList.remove("no-scroll");
-        }, 2000);
+            
+            // Remove loading screen from DOM after animation
+            setTimeout(() => {
+                loadingScreen.style.display = "none";
+            }, 600);
+        }, 1000);
     }
 });
 

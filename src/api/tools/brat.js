@@ -1,43 +1,60 @@
-const { createCanvas } = require('@napi-rs/canvas');
+const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
+
+// Register font DejaVu Sans (pasti ada di Linux)
+GlobalFonts.registerFromPath('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 'DejaVu');
 
 module.exports = function(app) {
     function generateBrat(text, size = 1080) {
         try {
-            // Create canvas 1:1
             const canvas = createCanvas(size, size);
             const ctx = canvas.getContext("2d");
 
-            // Background PUTIH
+            // Background putih
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, 0, size, size);
 
-            // SET WARNA HITAM untuk teks
+            // Hitung font size & wrap teks
+            let fontSize = Math.floor(size / 6);
+            ctx.font = `bold ${fontSize}px DejaVu`;
             ctx.fillStyle = "#000000";
-            
-            // Set font dengan ukuran besar (fix biar keliatan)
-            let fontSize = Math.floor(size / 4); // 270px untuk 1080 (lebih gede)
-            
-            // Coba dengan font default dulu
-            ctx.font = `bold ${fontSize}px "Arial", "Helvetica", sans-serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
-            // Log untuk debugging (hapus nanti)
-            console.log(`Generating brat for: "${text}" with font size: ${fontSize}`);
+            // Word wrap supaya teks panjang tetap muat
+            const maxWidth = size * 0.85;
+            const words = text.split(' ');
+            const lines = [];
+            let currentLine = '';
 
-            // Gambar teks dengan background hitam dulu buat test (hapus nanti)
-            ctx.fillText(text, size / 2, size / 2);
+            for (const word of words) {
+                const testLine = currentLine ? `${currentLine} ${word}` : word;
+                const { width } = ctx.measureText(testLine);
+                if (width > maxWidth && currentLine) {
+                    lines.push(currentLine);
+                    currentLine = word;
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            if (currentLine) lines.push(currentLine);
 
-            // Kembalikan buffer
+            // Gambar tiap baris di tengah
+            const lineHeight = fontSize * 1.2;
+            const totalHeight = lines.length * lineHeight;
+            const startY = (size - totalHeight) / 2 + lineHeight / 2;
+
+            for (let i = 0; i < lines.length; i++) {
+                ctx.fillText(lines[i], size / 2, startY + i * lineHeight);
+            }
+
             return canvas.toBuffer("image/png");
-            
+
         } catch (err) {
             console.error("Brat generator error:", err);
             throw new Error("Gagal generate gambar brat");
         }
     }
 
-    // Endpoint GET untuk brat generator
     app.get("/tools/brat", (req, res) => {
         const text = req.query.text;
 
@@ -49,10 +66,8 @@ module.exports = function(app) {
         }
 
         try {
-            // Generate gambar
             const image = generateBrat(text);
 
-            // Set response headers
             res.set({
                 "Content-Type": "image/png",
                 "Content-Disposition": `inline; filename="brat.png"`,
@@ -60,9 +75,8 @@ module.exports = function(app) {
                 "Cache-Control": "no-cache"
             });
 
-            // Kirim gambar
             res.send(image);
-            
+
         } catch (err) {
             res.status(500).json({
                 status: false,

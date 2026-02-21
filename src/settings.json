@@ -31,44 +31,14 @@
       "name": "AI (人工知能)",
       "items": [
         {
-          "name": "Bing AI",
-          "desc": "Generate images with Microsoft Bing AI",
-          "path": "/ai/bing?text=",
-          "method": "GET",
-          "params": {
-            "text": "Prompt untuk generate gambar"
-          }
-        },
-        {
           "name": "HydroMind",
           "desc": "Talk with hydromind AI",
-          "path": "/ai/hydromind?text=&model=",
-          "method": "GET",
-          "innerDesc": "See the list of supported AI models here: https://mind.hydrooo.web.id",
-          "params": {
-            "text": "Pesan yang ingin ditanyakan",
-            "model": "Model AI yang digunakan (lihat list di link)"
-          }
-        },
-        {
-          "name": "SimiSimi",
-          "desc": "Chat with SimiSimi AI",
-          "path": "/ai/simi?text=&lang=",
-          "method": "GET",
-          "params": {
-            "text": "Pesan yang ingin ditanyakan",
-            "lang": "Kode bahasa (default: id)"
-          }
+          "path": "/ai/hydromind?text=&model="
         },
         {
           "name": "Voice Miku",
-          "desc": "Miku TTS dengan model 1a_miku_default_rvc_(apple)",
-          "path": "/ai/voicemiku",
-          "method": "POST",
-          "params": {
-            "text": "Text yang akan diubah ke suara Miku (wajib)",
-            "edge_voice": "Pilihan: ja-JP-NanamiNeural-Female, en-CA-ClaraNeural-Female, id-ID-GadisNeural-Female, jv-ID-SitiNeural-Female (default: id-ID-GadisNeural-Female)"
-          }
+          "desc": "Miku TTS - Text to Speech",
+          "path": "/ai/voicemiku?text=&voice="
         }
       ]
     },
@@ -78,75 +48,42 @@
         {
           "name": "Google Drive",
           "desc": "Download from Google Drive link",
-          "path": "/downloader/drive?url=",
-          "method": "GET",
-          "params": {
-            "url": "Link Google Drive (https://drive.google.com/...)"
-          }
+          "path": "/downloader/drive?url="
         },
         {
           "name": "SaveTube",
           "desc": "Download YouTube video/audio",
-          "path": "/downloader/savetube?url=&format=",
-          "method": "GET",
-          "params": {
-            "url": "Link YouTube",
-            "format": "Format: mp3, m4a, 144, 240, 360, 480, 720, 1080 (default: mp3)"
-          }
+          "path": "/downloader/savetube?url=&format="
         },
         {
           "name": "SoundCloud",
           "desc": "Search tracks on SoundCloud",
-          "path": "/downloader/soundcloud?query=",
-          "method": "GET",
-          "params": {
-            "query": "Kata kunci pencarian"
-          }
+          "path": "/downloader/soundcloud?query="
         },
         {
           "name": "Terabox",
           "desc": "Download from Terabox link",
-          "path": "/downloader/terabox?url=",
-          "method": "GET",
-          "params": {
-            "url": "Link Terabox"
-          }
+          "path": "/downloader/terabox?url="
         },
         {
           "name": "TikTok MP3",
           "desc": "Download TikTok audio",
-          "path": "/downloader/ttmp3?url=",
-          "method": "GET",
-          "params": {
-            "url": "Link TikTok"
-          }
+          "path": "/downloader/ttmp3?url="
         },
         {
           "name": "TikTok MP4",
           "desc": "Download TikTok video",
-          "path": "/downloader/ttmp4?url=",
-          "method": "GET",
-          "params": {
-            "url": "Link TikTok"
-          }
+          "path": "/downloader/ttmp4?url="
         },
         {
           "name": "YouTube MP3",
           "desc": "Convert YouTube to MP3",
-          "path": "/downloader/ytmp3?url=",
-          "method": "GET",
-          "params": {
-            "url": "Link YouTube"
-          }
+          "path": "/downloader/ytmp3?url="
         },
         {
           "name": "YouTube MP4",
           "desc": "Download YouTube video",
-          "path": "/downloader/ytmp4?url=",
-          "method": "GET",
-          "params": {
-            "url": "Link YouTube"
-          }
+          "path": "/downloader/ytmp4?url="
         }
       ]
     },
@@ -156,41 +93,12 @@
         {
           "name": "Alight Motion",
           "desc": "Get Alight Motion project info",
-          "path": "/info/alightmotion?url=",
-          "method": "GET",
-          "params": {
-            "url": "Link Alight Motion (alight.link/...)"
-          }
-        },
-        {
-          "name": "BMKG",
-          "desc": "Latest earthquake info from BMKG",
-          "path": "/info/bmkg",
-          "method": "GET"
-        },
-        {
-          "name": "Free Fire Info",
-          "desc": "Free Fire account info by UID",
-          "path": "/info/ffinfo?uid=",
-          "method": "GET",
-          "params": {
-            "uid": "UID Free Fire (contoh: 123456789)"
-          }
-        },
-        {
-          "name": "JKT48",
-          "desc": "JKT48 latest news",
-          "path": "/info/jkt48",
-          "method": "GET"
+          "path": "/info/alightmotion?url="
         },
         {
           "name": "Weather",
           "desc": "Weather information by city",
-          "path": "/info/weather?city=",
-          "method": "GET",
-          "params": {
-            "city": "Nama kota (contoh: Jakarta)"
-          }
+          "path": "/info/weather?city="
         }
       ]
     },
@@ -200,14 +108,12 @@
         {
           "name": "Hentai",
           "desc": "Random hentai images (NSFW)",
-          "path": "/random/hentai",
-          "method": "GET"
+          "path": "/random/hentai"
         },
         {
           "name": "Blue Archive",
           "desc": "Blue Archive random images",
-          "path": "/random/ba",
-          "method": "GET"
+          "path": "/random/ba"
         }
       ]
     },
@@ -215,58 +121,19 @@
       "name": "Search Tools (検索ツール)",
       "items": [
         {
-          "name": "Bukalapak",
-          "desc": "Search products on Bukalapak",
-          "path": "/search/bukalapak?q=",
-          "method": "GET",
-          "params": {
-            "q": "Kata kunci pencarian"
-          }
-        },
-        {
-          "name": "Free Fire Search",
-          "desc": "Search Free Fire characters/pets/news",
-          "path": "/search/ffsearch?type=",
-          "method": "GET",
-          "params": {
-            "type": "characters, pets, atau news"
-          }
-        },
-        {
-          "name": "Google",
-          "desc": "Google search",
-          "path": "/search/google?q=",
-          "method": "GET",
-          "params": {
-            "q": "Kata kunci pencarian"
-          }
-        },
-        {
           "name": "Komiku",
           "desc": "Search manga on Komiku",
-          "path": "/search/komiku?q=",
-          "method": "GET",
-          "params": {
-            "q": "Judul manga"
-          }
+          "path": "/search/komiku?q="
         },
         {
           "name": "Kusonime",
           "desc": "Search anime on Kusonime",
-          "path": "/search/kusonime?q=",
-          "method": "GET",
-          "params": {
-            "q": "Judul anime"
-          }
+          "path": "/search/kusonime?q="
         },
         {
           "name": "YouTube",
           "desc": "Search YouTube videos",
-          "path": "/search/youtube?q=",
-          "method": "GET",
-          "params": {
-            "q": "Kata kunci pencarian"
-          }
+          "path": "/search/youtube?q="
         }
       ]
     },
@@ -276,30 +143,12 @@
         {
           "name": "Brat Generator",
           "desc": "Generate Brat-style text images",
-          "path": "/tools/brat?text=",
-          "method": "GET",
-          "params": {
-            "text": "Text yang akan diubah menjadi gambar brat"
-          }
-        },
-        {
-          "name": "Emoji Mix",
-          "desc": "Mix two emojis",
-          "path": "/tools/emojimix?emoji1=&emoji2=",
-          "method": "GET",
-          "params": {
-            "emoji1": "Emoji pertama (contoh: 😂)",
-            "emoji2": "Emoji kedua (contoh: 🔥)"
-          }
+          "path": "/tools/brat?text="
         },
         {
           "name": "Free Fire Tools",
           "desc": "Free Fire utilities",
-          "path": "/tools/fftools?type=all",
-          "method": "GET",
-          "params": {
-            "type": "all (wajib)"
-          }
+          "path": "/tools/fftools?type=all"
         }
       ]
     }

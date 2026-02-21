@@ -27,16 +27,16 @@
     "multer": "^1.4.5-lts.1",
     "human-readable": "^0.2.1",
     "ytdl-core": "^4.11.5",
-    "canvas": "^2.11.2",
     "crypto": "^1.0.1",
     "http": "^0.0.1-security",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "@napi-rs/canvas": "^0.1.44"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   },
   "keywords": [
     "api",

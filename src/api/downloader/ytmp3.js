@@ -1,7 +1,65 @@
 const axios = require('axios');
-const cheerio = require('cheerio');
 
 module.exports = function(app) {
+    const API = {
+        base: 'https://embed.dlsrv.online',
+        jina: 'https://r.jina.ai/',
+        endpoint: {
+            info: '/api/info',
+            downloadMp3: '/api/download/mp3',
+            full: '/v1/full'
+        }
+    };
+
+    const HEADERS = {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36',
+        'Content-Type': 'application/json'
+    };
+
+    function extractId(url) {
+        const match = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
+        return match ? match[1] : url.length === 11 ? url : null;
+    }
+
+    async function request(method, url, data) {
+        const response = await axios({ method, url, headers: HEADERS, data });
+        return response.data;
+    }
+
+    async function getMp3Formats(videoId) {
+        try {
+            const url = `${API.jina}${API.base}${API.endpoint.full}?videoId=${videoId}`;
+            const data = await request('GET', url);
+            
+            const rows = data.match(/\|\s*(\d+kbps)\s*\|\s*mp3\s*\|[^|]+\|/g) || [];
+            
+            const formats = await Promise.all(rows.map(async row => {
+                const quality = row.match(/(\d+kbps)/)?.[1];
+                if (!quality) return null;
+                
+                const dl = await request('POST', `${API.base}${API.endpoint.downloadMp3}`, {
+                    videoId,
+                    format: 'mp3',
+                    quality: quality.replace('kbps', '')
+                });
+                
+                if (dl.status === 'tunnel') {
+                    return {
+                        quality,
+                        url: dl.url,
+                        filename: dl.filename,
+                        duration: dl.duration
+                    };
+                }
+                return null;
+            }));
+            
+            return formats.filter(Boolean);
+        } catch {
+            return [];
+        }
+    }
+
     app.get("/downloader/ytmp3", async (req, res) => {
         const { url } = req.query;
 
@@ -13,60 +71,60 @@ module.exports = function(app) {
         }
 
         try {
-            // Ekstrak video ID
-            const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^?&]+)/)?.[1];
-            
-            // Method: Tambah 'ss' di depan youtube
-            const ssUrl = `https://ssyoutube.com/watch?v=${videoId}`;
-            
-            const response = await axios.get(ssUrl, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
-                }
-            });
-
-            const $ = cheerio.load(response.data);
-            
-            // Ambil judul
-            const title = $('meta[property="og:title"]').attr('content') || 
-                         $('title').text().replace('Download', '').trim();
-            
-            // Cari link MP3
-            let mp3Url = null;
-            $('a[href*=".mp3"]').each((i, el) => {
-                const link = $(el).attr('href');
-                if (link && link.includes('http') && !mp3Url) {
-                    mp3Url = link;
-                }
-            });
-
-            // Kalo ga nemu, coba dari API
-            if (!mp3Url) {
-                const apiResponse = await axios.post('https://ssyoutube.com/api/convert', {
-                    url: `https://www.youtube.com/watch?v=${videoId}`,
-                    format: 'mp3'
-                }, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0',
-                        'Content-Type': 'application/json'
-                    }
+            const videoId = extractId(url);
+            if (!videoId) {
+                return res.status(400).json({
+                    status: false,
+                    message: "URL YouTube tidak valid"
                 });
-
-                if (apiResponse.data && apiResponse.data.url) {
-                    mp3Url = apiResponse.data.url;
-                }
             }
+
+            // Get video info
+            const infoUrl = `${API.base}${API.endpoint.info}`;
+            const info = await request('POST', infoUrl, { videoId });
+            
+            if (info.status !== 'info') {
+                throw new Error('Gagal mendapatkan info video');
+            }
+
+            // Get MP3 formats
+            const mp3Formats = await getMp3Formats(videoId);
+
+            // Get other audio formats (m4a, opus, etc)
+            const otherAudio = await Promise.all(
+                info.info.formats
+                    .filter(f => f.type === 'audio' && f.format !== 'mp3')
+                    .map(async f => {
+                        const dl = await request('POST', `${API.base}${API.endpoint.downloadMp3}`, {
+                            videoId,
+                            format: f.format,
+                            quality: ''
+                        });
+                        
+                        if (dl.status === 'tunnel') {
+                            return {
+                                type: 'audio',
+                                format: f.format,
+                                fileSize: f.fileSize,
+                                url: dl.url,
+                                filename: dl.filename,
+                                duration: dl.duration
+                            };
+                        }
+                        return null;
+                    })
+            );
+
+            const { title, author, duration, thumbnail } = info.info;
 
             res.json({
                 status: true,
                 data: {
-                    title: title || `YouTube Video ${videoId}`,
-                    videoId: videoId,
-                    thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-                    format: 'mp3',
-                    quality: '128kbps',
-                    download_url: mp3Url || ssUrl
+                    info: { title, author, duration, thumbnail },
+                    formats: {
+                        mp3: mp3Formats,
+                        other: otherAudio.filter(Boolean)
+                    }
                 }
             });
 

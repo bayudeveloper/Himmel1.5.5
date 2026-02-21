@@ -1,5 +1,6 @@
 const axios = require('axios');
 const FormData = require('form-data');
+
 module.exports = function(app) {
     async function hydromind(content, model) {
         const form = new FormData();
@@ -9,14 +10,18 @@ module.exports = function(app) {
             headers: {
                 ...form.getHeaders(),
             }
-        })
+        });
         return data;
     }
+
     app.get('/ai/hydromind', async (req, res) => {
         try {
             const { text, model } = req.query;
             if (!text || !model) {
-                return res.status(400).json({ status: false, error: 'Text and Model is required' });
+                return res.status(400).json({ 
+                    status: false, 
+                    error: 'Text and Model is required' 
+                });
             }
             const { result } = await hydromind(text, model);
             res.status(200).json({
@@ -24,7 +29,10 @@ module.exports = function(app) {
                 result
             });
         } catch (error) {
-            res.status(500).json({ status: false, error: error.message });
+            res.status(500).json({ 
+                status: false, 
+                error: error.message 
+            });
         }
     });
-}
+};

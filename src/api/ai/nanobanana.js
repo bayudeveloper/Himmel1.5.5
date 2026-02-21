@@ -5,6 +5,7 @@ const FormData = require('form-data');
 const path = require('path');
 
 module.exports = function(app) {
+    // ==================== TEMP MAIL SCRAPER (LENGKAP DARI KODEMU) ====================
     class TempMailScraper {
         constructor() {
             this.baseUrl = 'https://akunlama.com';
@@ -12,7 +13,10 @@ module.exports = function(app) {
                 'accept': 'application/json, text/plain, */*',
                 'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
                 'referer': 'https://akunlama.com/',
-                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
             };
             this.recipient = crypto.randomBytes(8).toString('hex').substring(0, 10);
             this.lastCount = 0;
@@ -26,11 +30,11 @@ module.exports = function(app) {
             try {
                 const response = await axios.get(`${this.baseUrl}/api/list`, {
                     params: { recipient: this.recipient },
-                    headers: this.headers,
+                    headers: { ...this.headers, referer: `https://akunlama.com/inbox/${this.recipient}/list` },
                     timeout: 10000
                 });
                 return response.data;
-            } catch {
+            } catch (err) {
                 return [];
             }
         }
@@ -39,11 +43,11 @@ module.exports = function(app) {
             try {
                 const response = await axios.get(`${this.baseUrl}/api/getHtml`, {
                     params: { region: msg.storage.region, key: msg.storage.key },
-                    headers: this.headers,
+                    headers: { ...this.headers, referer: `https://akunlama.com/inbox/${this.recipient}/message/${msg.storage.region}/${msg.storage.key}` },
                     timeout: 10000
                 });
                 return response.data;
-            } catch {
+            } catch (err) {
                 return '';
             }
         }
@@ -80,7 +84,49 @@ module.exports = function(app) {
         }
     }
 
-    class NanoBananaGenerator {
+    // ==================== UPLOAD TO CATBOX (GANTI express-fileupload) ====================
+    async function uploadToCatbox(filePath) {
+        try {
+            const form = new FormData();
+            form.append('fileToUpload', fs.createReadStream(filePath));
+            form.append('reqtype', 'fileupload');
+            
+            const response = await axios.post('https://catbox.moe/user/api.php', form, {
+                headers: {
+                    ...form.getHeaders(),
+                    'User-Agent': 'Mozilla/5.0'
+                },
+                timeout: 30000
+            });
+            
+            return response.data.trim();
+        } catch (err) {
+            throw new Error(`Catbox upload failed: ${err.message}`);
+        }
+    }
+
+    // ==================== DOWNLOAD FROM URL ====================
+    async function downloadFromUrl(url) {
+        const tempPath = path.join('/tmp', `nanobanana_${Date.now()}_${path.basename(url)}`);
+        const writer = fs.createWriteStream(tempPath);
+        
+        const response = await axios({
+            method: 'get',
+            url: url,
+            responseType: 'stream',
+            timeout: 30000
+        });
+
+        response.data.pipe(writer);
+
+        return new Promise((resolve, reject) => {
+            writer.on('finish', () => resolve(tempPath));
+            writer.on('error', reject);
+        });
+    }
+
+    // ==================== NANANA CLASS (LENGKAP DARI KODEMU) ====================
+    class Nanana {
         constructor() {
             this.baseUrl = 'https://nanana.app';
             this.tempMail = new TempMailScraper();
@@ -91,7 +137,10 @@ module.exports = function(app) {
                 'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
                 'origin': this.baseUrl,
                 'referer': `${this.baseUrl}/en`,
-                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
             };
         }
 
@@ -119,11 +168,12 @@ module.exports = function(app) {
         }
 
         async sendOtp(email) {
-            await axios.post(
+            const response = await axios.post(
                 `${this.baseUrl}/api/auth/email-otp/send-verification-otp`,
                 { email, type: 'sign-in' },
                 { headers: this.defaultHeaders, timeout: 15000 }
             );
+            return response.data;
         }
 
         async verifyOtp(email, otp) {
@@ -141,19 +191,18 @@ module.exports = function(app) {
                     this.cookieString = this.sessionToken;
                 }
             }
+            
+            return response.data;
         }
 
-        async uploadImage(imagePath) {
-            const form = new FormData();
-            form.append('image', fs.createReadStream(imagePath));
-
+        async uploadImage(imageUrl) {
             const response = await axios.post(
                 `${this.baseUrl}/api/upload-img`,
-                form,
+                { image_url: imageUrl },
                 {
                     headers: {
                         ...this.defaultHeaders,
-                        ...form.getHeaders(),
+                        'content-type': 'application/json',
                         'Cookie': this.cookieString,
                         'x-fp-id': this.generateFpId()
                     },
@@ -200,78 +249,77 @@ module.exports = function(app) {
             return response.data;
         }
 
-        async processImage(imagePath, prompt) {
-            const uploadResult = await this.uploadImage(imagePath);
-            if (!uploadResult || !uploadResult.url) {
-                throw new Error("Upload failed: no URL returned");
-            }
-
-            const generateResult = await this.generateImage(uploadResult.url, prompt);
-            if (!generateResult || !generateResult.request_id) {
-                throw new Error("Generation failed: no request_id");
-            }
-
-            const maxAttempts = 30;
+        async processImage(imageUrl, prompt) {
+            const uploadResult = await this.uploadImage(imageUrl);
+            const generateResult = await this.generateImage(uploadResult.url || imageUrl, prompt);
+            
+            const maxAttempts = 60;
             for (let i = 0; i < maxAttempts; i++) {
                 const result = await this.getResult(generateResult.request_id);
-                
                 if (result.completed) {
                     return result;
                 }
-                
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
-
+            
             throw new Error("Timeout waiting for result");
         }
     }
 
-    // POST endpoint - dengan parameter prompt di query
+    // ==================== ENDPOINT UTAMA (SATU AJA) ====================
     app.post('/ai/nanobanana', async (req, res) => {
         try {
-            const { prompt } = req.query;
+            const { prompt, image_url } = req.query;
             
             if (!prompt) {
                 return res.status(400).json({
                     status: false,
-                    message: "Parameter 'prompt' wajib diisi! Contoh: /ai/nanobanana?prompt=konser"
+                    message: "Parameter 'prompt' wajib diisi!"
                 });
             }
 
-            if (!req.files || !req.files.image) {
+            if (!image_url) {
                 return res.status(400).json({
                     status: false,
-                    message: "Upload file image dengan field 'image'"
+                    message: "Parameter 'image_url' wajib diisi!"
                 });
             }
 
-            const imageFile = req.files.image;
-            const tempPath = path.join('/tmp', `nanobanana_${Date.now()}_${imageFile.name}`);
-            
-            // Simpan file sementara
-            await imageFile.mv(tempPath);
+            console.log(`🔄 Processing: prompt="${prompt}"`);
 
+            // Download gambar dari URL
+            let tempPath = null;
             try {
-                const generator = new NanoBananaGenerator();
-                
-                // Initialize with temp mail
+                tempPath = await downloadFromUrl(image_url);
+                console.log(`📥 Image downloaded`);
+
+                // Upload ke Catbox
+                const catboxUrl = await uploadToCatbox(tempPath);
+                console.log(`☁️ Uploaded to Catbox`);
+
+                // Inisialisasi Nanana
+                const generator = new Nanana();
                 await generator.initialize();
+                console.log(`✅ Nanana initialized`);
 
-                // Process image dengan prompt dari query
-                const result = await generator.processImage(tempPath, prompt);
+                // Process image
+                const result = await generator.processImage(catboxUrl, prompt);
+                console.log(`✅ Generation complete`);
 
-                // Hapus file sementara
-                fs.unlinkSync(tempPath);
+                // Cleanup
+                if (tempPath && fs.existsSync(tempPath)) {
+                    fs.unlinkSync(tempPath);
+                }
 
                 res.json({
                     status: true,
-                    prompt: prompt,
-                    data: result
+                    data: {
+                        result_url: result.result_url || result.url || result.image_url
+                    }
                 });
 
             } catch (err) {
-                // Hapus file sementara kalo error
-                if (fs.existsSync(tempPath)) {
+                if (tempPath && fs.existsSync(tempPath)) {
                     fs.unlinkSync(tempPath);
                 }
                 throw err;
@@ -283,26 +331,5 @@ module.exports = function(app) {
                 error: err.message
             });
         }
-    });
-
-    // GET endpoint - info
-    app.get('/ai/nanobanana', (req, res) => {
-        res.json({
-            status: true,
-            name: "NanoBanana AI Image Generator",
-            description: "Transform images using AI with custom prompts",
-            usage: {
-                method: "POST",
-                endpoint: "/ai/nanobanana?prompt=YOUR_PROMPT",
-                body: {
-                    image: "file (multipart/form-data)"
-                }
-            },
-            examples: [
-                "/ai/nanobanana?prompt=konser",
-                "/ai/nanobanana?promput=cyberpunk",
-                "/ai/nanobanana?prompt=anime%20style"
-            ]
-        });
     });
 };

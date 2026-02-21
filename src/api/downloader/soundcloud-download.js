@@ -1,55 +1,13 @@
 const axios = require('axios');
 
 module.exports = function(app) {
-    class SoundCloudDownload {
-        constructor() {
-            this.baseURL = 'https://m.joomods.web.id';
-            this.headers = {
-                'accept': '*/*',
-                'accept-encoding': 'gzip, deflate, br, zstd',
-                'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
-                'referer': 'https://m.joomods.web.id/',
-                'sec-ch-ua': '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
-                'sec-ch-ua-mobile': '?1',
-                'sec-ch-ua-platform': '"Android"',
-                'user-agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36'
-            };
-        }
-
-        async download(url) {
-            try {
-                const response = await axios({
-                    method: 'GET',
-                    url: `${this.baseURL}/api/music`,
-                    headers: this.headers,
-                    params: {
-                        download: url
-                    },
-                    timeout: 15000
-                });
-
-                return response.data;
-            } catch (err) {
-                return {
-                    status: false,
-                    message: err.message
-                };
-            }
-        }
-    }
-
-    /**
-     * ENDPOINT: /downloader/soundcloud/download?url=https://soundcloud.com/artist/track
-     * Method: GET
-     * Desc: Get download URL from SoundCloud track
-     */
     app.get('/downloader/soundcloud/download', async (req, res) => {
         const { url } = req.query;
 
         if (!url) {
             return res.status(400).json({
                 status: false,
-                message: "Parameter 'url' wajib diisi! Contoh: /downloader/soundcloud/download?url=https://soundcloud.com/artist/track"
+                message: "Parameter 'url' wajib diisi! Contoh: /downloader/soundcloud/download?url=https://soundcloud.com/..."
             });
         }
 
@@ -61,25 +19,40 @@ module.exports = function(app) {
         }
 
         try {
-            const api = new SoundCloudDownload();
-            const result = await api.download(url);
+            const response = await axios.post('https://cobalt.tools/api/json', {
+                url: url,
+                aFormat: 'mp3',
+                isAudioOnly: true
+            }, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                timeout: 30000
+            });
 
-            if (!result.status) {
+            const data = response.data;
+
+            if (data.status === 'error') {
                 return res.status(400).json({
                     status: false,
-                    message: result.message || 'Gagal mendapatkan download URL'
+                    message: data.text || 'Gagal mendapatkan audio'
                 });
             }
 
-            res.json({
-                status: true,
-                url: url,
-                data: {
-                    title: result.result?.title || 'Unknown',
-                    duration: result.result?.duration || 'Unknown',
-                    download_url: result.result?.download_url || null
-                }
-            });
+            if (data.status === 'stream' || data.status === 'redirect') {
+                return res.json({
+                    status: true,
+                    url: url,
+                    data: {
+                        download_url: data.url,
+                        type: 'audio'
+                    }
+                });
+            }
+
+            res.json({ status: true, url, data });
 
         } catch (err) {
             res.status(500).json({

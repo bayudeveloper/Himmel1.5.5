@@ -8,9 +8,9 @@
       "https://files.catbox.moe/tbk8kv.gif"
     ],
     "imageSize": {
-      "mobile": "95%",
-      "tablet": "80%",
-      "desktop": "70%"
+      "mobile": "150%",
+      "tablet": "150%",
+      "desktop": "150%"
     }
   },
   "apiSettings": {

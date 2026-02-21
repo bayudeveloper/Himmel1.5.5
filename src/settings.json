@@ -38,11 +38,7 @@
     {
       "name": "NanoBanana",
       "desc": "AI Image Generator - Transform images with prompts",
-      "path": "/ai/nanobanana?prompt=",
-      "method": "POST",
-      "params": {
-        "prompt": "Deskripsi transformasi gambar (wajib)",
-        "image": "File gambar yang akan ditransformasi (upload)"
+      "path": "/ai/nanobanana?prompt="
         },
         {
       "name": "Downloader (ダウンローダー)",

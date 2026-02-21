@@ -30,15 +30,15 @@
  {
   "name": "AI (人工知能)",
   "items": [
-    {
+       {
       "name": "HydroMind",
       "desc": "Talk with hydromind AI",
       "path": "/ai/hydromind?text=&model="
-    },
-    {
-      "name": "NanoBanana",
-      "desc": "AI Image Generator - Transform images with prompts",
-      "path": "/ai/nanobanana?prompt="
+        },
+        {
+  "name": "NanoBanana",
+  "desc": "AI Image Generator - Transform images with prompts (need image_url)",
+  "path": "/ai/nanobanana?prompt=&image_url="
         },
         {
       "name": "Downloader (ダウンローダー)",

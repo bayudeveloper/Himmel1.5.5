@@ -9,16 +9,24 @@ module.exports = function(app) {
     async function getBingCookie() {
         try {
             const res = await fetch(BING_URL, {
-                headers: { "user-agent": fakeUserAgent() }
+                headers: { 
+                    "user-agent": fakeUserAgent(),
+                    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+                }
             });
+            
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            
             const rawCookies = res.headers.raw()['set-cookie'];
             if (!rawCookies) throw new Error("No cookies received");
+            
             const cookieString = rawCookies.join(";");
             const match = cookieString.match(/_U=([^;]+)/);
             if (!match) throw new Error("_U cookie not found");
+            
             return `_U=${match[1]}`;
         } catch (err) {
-            throw new Error("Failed to get Bing cookie");
+            throw new Error("Failed to get Bing cookie: " + err.message);
         }
     }
 
@@ -33,8 +41,10 @@ module.exports = function(app) {
                 method: "POST",
                 headers: {
                     "user-agent": fakeUserAgent(),
-                    "cookie": cookie
+                    "cookie": cookie,
+                    "content-type": "application/x-www-form-urlencoded"
                 },
+                body: new URLSearchParams({ q: encodedPrompt, qa: "ds" }).toString(),
                 redirect: "manual"
             });
 
@@ -42,6 +52,7 @@ module.exports = function(app) {
             if (!redirect) throw new Error("Failed to get redirect");
 
             const requestId = redirect.split("id=")[1];
+            if (!requestId) throw new Error("Failed to get request ID");
 
             await fetch(`${BING_URL}${redirect}`, {
                 headers: { cookie }
@@ -51,17 +62,22 @@ module.exports = function(app) {
             const start = Date.now();
 
             while (true) {
-                if (Date.now() - start > 60000) throw new Error("Timeout");
+                if (Date.now() - start > 60000) throw new Error("Timeout after 60 seconds");
                 await sleep(2000);
 
                 const res = await fetch(resultUrl, { headers: { cookie } });
+                if (!res.ok) continue;
+
                 const text = await res.text();
 
-                if (text && !text.includes("errorMessage")) {
+                if (text && !text.includes("errorMessage") && !text.includes("<!--")) {
                     const links = [...text.matchAll(/src="([^"]*)"/g)]
                         .map(m => m[1].split("?w=")[0])
-                        .filter(link => !/r.bing.com\/rp/i.test(link));
-                    return [...new Set(links)];
+                        .filter(link => link.includes('bing.com') && !link.includes('r.bing.com'));
+                    
+                    if (links.length > 0) {
+                        return [...new Set(links)];
+                    }
                 }
             }
         } catch (err) {
@@ -84,6 +100,7 @@ module.exports = function(app) {
             res.json({
                 status: true,
                 prompt,
+                total: images.length,
                 images
             });
         } catch (err) {

@@ -1,6 +1,4 @@
 const ytdl = require("ytdl-core");
-const fs = require("fs");
-const path = require("path");
 
 module.exports = function(app) {
     app.get("/downloader/ytmp3", async (req, res) => {
@@ -13,44 +11,28 @@ module.exports = function(app) {
             });
         }
 
-        if (!ytdl.validateURL(url)) {
-            return res.status(400).json({
-                status: false,
-                message: "URL tidak valid"
-            });
-        }
-
         try {
-            const info = await ytdl.getInfo(url);
-
-            const title = info.videoDetails.title.replace(/[^a-z0-9]/gi, "_").toLowerCase();
-            const filename = `${title}.mp3`;
-            const downloadDir = path.join(__dirname, "../../../downloads");
-            
-            if (!fs.existsSync(downloadDir)) {
-                fs.mkdirSync(downloadDir, { recursive: true });
-            }
-            
-            const filepath = path.join(downloadDir, filename);
-
-            const metadata = {
-                title: info.videoDetails.title,
-                author: info.videoDetails.author.name,
-                duration: info.videoDetails.lengthSeconds,
-                views: info.videoDetails.viewCount,
-                thumbnail: info.videoDetails.thumbnails.pop().url
-            };
-
-            ytdl(url, { filter: "audioonly", quality: "highestaudio" })
-                .pipe(fs.createWriteStream(filepath))
-                .on("finish", () => {
-                    res.json({
-                        status: true,
-                        info: metadata,
-                        download: `/downloads/${filename}`
-                    });
+            if (!ytdl.validateURL(url)) {
+                return res.status(400).json({
+                    status: false,
+                    message: "URL YouTube tidak valid"
                 });
+            }
 
+            const info = await ytdl.getInfo(url);
+            const format = ytdl.chooseFormat(info.formats, { filter: 'audioonly' });
+            
+            res.json({
+                status: true,
+                data: {
+                    title: info.videoDetails.title,
+                    author: info.videoDetails.author.name,
+                    duration: info.videoDetails.lengthSeconds,
+                    thumbnail: info.videoDetails.thumbnails[info.videoDetails.thumbnails.length - 1].url,
+                    audio: format.url,
+                    quality: format.audioBitrate + ' kbps'
+                }
+            });
         } catch (err) {
             res.status(500).json({
                 status: false,

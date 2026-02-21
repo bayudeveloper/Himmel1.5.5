@@ -5,7 +5,6 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 4000;
 
 app.enable("trust proxy");
 app.set("json spaces", 2);
@@ -67,8 +66,6 @@ app.use((err, req, res, next) => {
     res.status(500).sendFile(process.cwd() + "/api-page/500.html");
 });
 
-app.listen(PORT, () => {
-    console.log(chalk.bgHex('#90EE90').hex('#333').bold(` Server is running on port ${PORT} `));
-});
+// REMOVED: app.listen() - NOT ALLOWED in Vercel serverless
 
 module.exports = app;

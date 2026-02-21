@@ -1,109 +1,92 @@
 const axios = require('axios');
-const cheerio = require('cheerio');
 
 module.exports = function(app) {
-    async function scrapeFromSSYouTube(url) {
+    const API = {
+        base: 'https://embed.dlsrv.online',
+        jina: 'https://r.jina.ai/',
+        endpoint: {
+            info: '/api/info',
+            downloadMp4: '/api/download/mp4',
+            downloadMp3: '/api/download/mp3',
+            full: '/v1/full'
+        }
+    };
+
+    const HEADERS = {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip, deflate, br, zstd'
+    };
+
+    function extractId(url) {
+        const match = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
+        return match ? match[1] : url.length === 11 ? url : null;
+    }
+
+    async function request(method, url, data, customHeaders = {}) {
         try {
-            // Ekstrak video ID
-            const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^?&]+)/)?.[1];
-            
-            // Method 1: Langsung akses dengan tambahan 'ss'
-            const ssUrl = `https://ssyoutube.com/watch?v=${videoId}`;
-            
-            const response = await axios.get(ssUrl, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.5',
-                    'Referer': 'https://www.youtube.com/'
-                }
+            const response = await axios({
+                method,
+                url,
+                headers: { ...HEADERS, ...customHeaders },
+                data
             });
-
-            const $ = cheerio.load(response.data);
-            
-            // Ambil judul dari meta
-            let title = $('meta[property="og:title"]').attr('content') || 
-                       $('title').text().replace('Download', '').trim() ||
-                       `Video ${videoId}`;
-            
-            // Ambil thumbnail
-            let thumbnail = $('meta[property="og:image"]').attr('content') || 
-                           `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-
-            // Cari semua link download
-            const formats = [];
-            
-            // Cari link video
-            $('a[href*=".mp4"], a[href*="download"]').each((i, el) => {
-                const link = $(el).attr('href');
-                const text = $(el).text().toLowerCase();
-                
-                if (link && link.includes('http')) {
-                    let quality = '720p';
-                    if (text.includes('1080')) quality = '1080p';
-                    else if (text.includes('720')) quality = '720p';
-                    else if (text.includes('480')) quality = '480p';
-                    else if (text.includes('360')) quality = '360p';
-                    
-                    formats.push({
-                        type: 'video',
-                        format: 'mp4',
-                        quality: quality,
-                        url: link
-                    });
-                }
-            });
-
-            // Cari link audio
-            $('a[href*=".mp3"]').each((i, el) => {
-                const link = $(el).attr('href');
-                if (link && link.includes('http')) {
-                    formats.push({
-                        type: 'audio',
-                        format: 'mp3',
-                        quality: '128kbps',
-                        url: link
-                    });
-                }
-            });
-
-            // Method 2: Coba ambil dari API mereka
-            if (formats.length === 0) {
-                const apiResponse = await axios.post('https://ssyoutube.com/api/convert', {
-                    url: `https://www.youtube.com/watch?v=${videoId}`,
-                    format: 'mp4'
-                }, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-
-                if (apiResponse.data && apiResponse.data.url) {
-                    formats.push({
-                        type: 'video',
-                        format: 'mp4',
-                        quality: '720p',
-                        url: apiResponse.data.url
-                    });
-                }
-            }
-
-            return {
-                title: title,
-                videoId: videoId,
-                thumbnail: thumbnail,
-                formats: formats
-            };
-
+            return response.data;
         } catch (err) {
-            throw new Error(`Gagal scrape: ${err.message}`);
+            throw new Error(err.response?.data?.message || err.message);
+        }
+    }
+
+    async function getDownloadUrl(videoId, type, format, quality) {
+        try {
+            const endpoint = type === 'video' 
+                ? `${API.base}${API.endpoint.downloadMp4}`
+                : `${API.base}${API.endpoint.downloadMp3}`;
+            
+            const res = await request('POST', endpoint, { videoId, format, quality: quality || '' });
+            
+            if (res.status === 'tunnel') {
+                return {
+                    url: res.url,
+                    filename: res.filename,
+                    duration: res.duration
+                };
+            }
+            return null;
+        } catch (err) {
+            return null;
+        }
+    }
+
+    async function getMp3Formats(videoId) {
+        try {
+            const url = `${API.jina}${API.base}${API.endpoint.full}?videoId=${videoId}`;
+            const data = await request('GET', url, null, { 'Content-Type': undefined });
+            
+            const rows = data.match(/\|\s*(\d+kbps)\s*\|\s*mp3\s*\|[^|]+\|/g) || [];
+            
+            const formats = await Promise.all(rows.map(async row => {
+                const quality = row.match(/(\d+kbps)/)?.[1];
+                if (!quality) return null;
+                
+                const dl = await getDownloadUrl(videoId, 'audio', 'mp3', quality.replace('kbps', ''));
+                return dl ? {
+                    type: 'audio',
+                    quality,
+                    format: 'mp3',
+                    fileSize: null,
+                    ...dl
+                } : null;
+            }));
+            
+            return formats.filter(Boolean);
+        } catch {
+            return [];
         }
     }
 
     app.get("/downloader/savetube", async (req, res) => {
-        const { url, format = 'mp3' } = req.query;
+        const { url, format = 'mp4' } = req.query;
 
         if (!url) {
             return res.status(400).json({
@@ -113,28 +96,71 @@ module.exports = function(app) {
         }
 
         try {
-            const result = await scrapeFromSSYouTube(url);
-            
-            // Filter berdasarkan format
-            let downloadUrl = null;
-            let selectedFormat = null;
-            
-            if (format === 'mp3') {
-                selectedFormat = result.formats.find(f => f.format === 'mp3');
-            } else {
-                selectedFormat = result.formats.find(f => f.format === 'mp4');
+            const videoId = extractId(url);
+            if (!videoId) {
+                return res.status(400).json({
+                    status: false,
+                    message: "URL YouTube tidak valid"
+                });
             }
+
+            // Get video info
+            const infoUrl = `${API.base}${API.endpoint.info}`;
+            const info = await request('POST', infoUrl, { videoId });
+            
+            if (info.status !== 'info') {
+                throw new Error('Gagal mendapatkan info video');
+            }
+
+            // Get all formats
+            const videoFormats = await Promise.all(
+                info.info.formats
+                    .filter(f => f.type === 'video')
+                    .map(async f => {
+                        const dl = await getDownloadUrl(videoId, 'video', f.format, f.quality.replace('p', ''));
+                        return dl ? { ...f, ...dl } : null;
+                    })
+            );
+
+            const audioFormats = await Promise.all(
+                info.info.formats
+                    .filter(f => f.type === 'audio' && f.format !== 'mp3')
+                    .map(async f => {
+                        const dl = await getDownloadUrl(videoId, 'audio', f.format, '');
+                        return dl ? { ...f, ...dl } : null;
+                    })
+            );
+
+            const mp3Formats = await getMp3Formats(videoId);
+
+            const allFormats = [...videoFormats, ...audioFormats, ...mp3Formats].filter(Boolean);
+
+            // Filter berdasarkan format yang diminta
+            let filteredFormats = allFormats;
+            if (format !== 'all') {
+                if (format === 'mp3') {
+                    filteredFormats = allFormats.filter(f => f.format === 'mp3');
+                } else if (['mp4', 'video'].includes(format)) {
+                    filteredFormats = allFormats.filter(f => f.type === 'video');
+                } else {
+                    filteredFormats = allFormats.filter(f => f.format === format);
+                }
+            }
+
+            const { title, author, channelId, duration, thumbnail } = info.info;
 
             res.json({
                 status: true,
                 data: {
-                    title: result.title,
-                    videoId: result.videoId,
-                    thumbnail: result.thumbnail,
-                    format: format,
-                    quality: selectedFormat?.quality || (format === 'mp3' ? '128kbps' : '720p'),
-                    download_url: selectedFormat?.url || `https://ssyoutube.com/watch?v=${result.videoId}`,
-                    all_formats: result.formats
+                    info: {
+                        title,
+                        author,
+                        channelId,
+                        duration,
+                        thumbnail
+                    },
+                    formats: filteredFormats,
+                    total: filteredFormats.length
                 }
             });
 

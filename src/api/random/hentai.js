@@ -4,43 +4,38 @@ const cheerio = require("cheerio");
 module.exports = function(app) {
     app.get("/random/hentai", async (req, res) => {
         try {
-            const page = Math.floor(Math.random() * 100) + 1;
-            
-            const response = await axios.get(`https://hentaihaven.xxx/page/${page}/`, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0'
-                },
-                timeout: 10000
-            });
-
-            const $ = cheerio.load(response.data);
-            const results = [];
-
-            $('article').each((i, el) => {
-                const title = $(el).find('.entry-title a').text().trim();
-                const link = $(el).find('.entry-title a').attr('href');
-                const image = $(el).find('img').attr('src');
-                
-                if (title && link) {
-                    results.push({
-                        title,
-                        link,
-                        image: image || null
-                    });
-                }
+            // Gunakan API yang lebih stabil
+            const response = await axios.get('https://api.waifu.pics/nsfw/waifu', {
+                headers: { 'User-Agent': 'Mozilla/5.0' }
             });
 
             res.json({
                 status: true,
-                page: page,
-                total: results.length,
-                data: results.slice(0, 10)
+                data: {
+                    url: response.data.url,
+                    source: "waifu.pics"
+                }
             });
         } catch (err) {
-            res.status(500).json({
-                status: false,
-                error: err.message
-            });
+            // Fallback ke sumber lain
+            try {
+                const response = await axios.get('https://nekos.life/api/v2/img/hentai', {
+                    headers: { 'User-Agent': 'Mozilla/5.0' }
+                });
+
+                res.json({
+                    status: true,
+                    data: {
+                        url: response.data.url,
+                        source: "nekos.life"
+                    }
+                });
+            } catch (err2) {
+                res.status(500).json({
+                    status: false,
+                    error: "Failed to fetch hentai images"
+                });
+            }
         }
     });
 };

@@ -25,31 +25,43 @@ module.exports = function(app) {
         }
 
         try {
-            const formData = new URLSearchParams();
-            formData.append('text', text);
-            formData.append('lc', lang);
-
-            const response = await axios.post(
-                'https://api.simsimi.vn/v2/simtalk',
-                formData,
-                {
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    timeout: 10000
+            // Gunakan API alternatif yang lebih stabil
+            const response = await axios.get(`https://api.simsimi.net/v2/?text=${encodeURIComponent(text)}&lc=${lang}`, {
+                timeout: 10000,
+                headers: {
+                    'User-Agent': 'Mozilla/5.0'
                 }
-            );
+            });
+
+            if (response.data && response.data.success) {
+                return res.json({
+                    status: true,
+                    language: lang,
+                    reply: response.data.success
+                });
+            }
+
+            // Fallback ke API lain
+            const fallbackResponse = await axios.post('https://wsapi.simsimi.com/190410/talk', {
+                "utext": text,
+                "lang": lang
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                timeout: 5000
+            });
 
             res.json({
                 status: true,
                 language: lang,
-                reply: response.data.message || response.data.msg || "No reply"
+                reply: fallbackResponse.data.atext || fallbackResponse.data.message
             });
 
         } catch (err) {
             res.status(500).json({
                 status: false,
-                error: err.response?.data?.message || err.message
+                error: "Layanan SimiSimi sedang sibuk, coba lagi nanti"
             });
         }
     });

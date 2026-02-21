@@ -2,52 +2,26 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 
 module.exports = function(app) {
-    async function scrapeEmojiMix(emoji1, emoji2) {
+    async function emojiMix(emoji1, emoji2) {
         try {
-            const url = `https://tikolu.net/emojimix/${encodeURIComponent(emoji1)}+${encodeURIComponent(emoji2)}`;
-
-            const { data } = await axios.get(url, {
+            const response = await axios.get(`https://emojimix.com/${encodeURIComponent(emoji1)}/${encodeURIComponent(emoji2)}`, {
                 headers: {
-                    "User-Agent": "Mozilla/5.0"
-                },
-                timeout: 15000
-            });
-
-            const $ = cheerio.load(data);
-
-            let imageUrl = null;
-
-            $("img").each((i, el) => {
-                const src = $(el).attr("src");
-                if (src && (src.includes("emojimix") || src.includes(".png"))) {
-                    imageUrl = src;
-                    return false;
+                    'User-Agent': 'Mozilla/5.0'
                 }
             });
 
-            if (!imageUrl) {
-                return { error: true, message: "Gambar tidak ditemukan" };
+            const $ = cheerio.load(response.data);
+            const image = $('meta[property="og:image"]').attr('content');
+            
+            if (image) {
+                return {
+                    image: image,
+                    url: `https://emojimix.com/${emoji1}/${emoji2}`
+                };
             }
-
-            if (imageUrl.startsWith("//")) {
-                imageUrl = "https:" + imageUrl;
-            } else if (imageUrl.startsWith("/")) {
-                imageUrl = "https://tikolu.net" + imageUrl;
-            }
-
-            return {
-                error: false,
-                pageUrl: url,
-                imageUrl,
-                emoji1,
-                emoji2
-            };
-
+            throw new Error('Emoji combination not found');
         } catch (err) {
-            return {
-                error: true,
-                message: err.message
-            };
+            throw err;
         }
     }
 
@@ -61,20 +35,18 @@ module.exports = function(app) {
             });
         }
 
-        const result = await scrapeEmojiMix(emoji1, emoji2);
-
-        if (result.error) {
-            return res.status(500).json({
+        try {
+            const result = await emojiMix(emoji1, emoji2);
+            
+            res.json({
+                status: true,
+                data: result
+            });
+        } catch (err) {
+            res.status(500).json({
                 status: false,
-                message: result.message
+                error: err.message
             });
         }
-
-        res.json({
-            status: true,
-            source: "Tikolu EmojiMix",
-            timestamp: new Date().toISOString(),
-            data: result
-        });
     });
 };

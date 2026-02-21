@@ -4,51 +4,42 @@ const cheerio = require("cheerio");
 module.exports = function(app) {
     app.get("/random/hentai", async (req, res) => {
         try {
-            const page = Math.floor(Math.random() * 1153);
-
-            const response = await axios.get(`https://sfmcompile.club/page/${page}`, {
+            const page = Math.floor(Math.random() * 100) + 1;
+            
+            const response = await axios.get(`https://hentaihaven.xxx/page/${page}/`, {
                 headers: {
-                    "User-Agent": "Mozilla/5.0"
-                }
+                    'User-Agent': 'Mozilla/5.0'
+                },
+                timeout: 10000
             });
 
             const $ = cheerio.load(response.data);
-            const hasil = [];
+            const results = [];
 
-            $("#primary > div > div > ul > li > article").each((i, el) => {
-                hasil.push({
-                    title: $(el).find("header > h2").text().trim(),
-                    link: $(el).find("header > h2 > a").attr("href"),
-                    category: $(el)
-                        .find("header > div.entry-before-title > span > span")
-                        .text()
-                        .replace("in ", "")
-                        .trim(),
-                    share_count: $(el)
-                        .find("header > div.entry-after-title > p > span.entry-shares")
-                        .text()
-                        .trim(),
-                    views_count: $(el)
-                        .find("header > div.entry-after-title > p > span.entry-views")
-                        .text()
-                        .trim(),
-                    type: $(el).find("source").attr("type") || "image/jpeg",
-                    media: $(el).find("source").attr("src") || $(el).find("img").attr("data-src"),
-                });
+            $('article').each((i, el) => {
+                const title = $(el).find('.entry-title a').text().trim();
+                const link = $(el).find('.entry-title a').attr('href');
+                const image = $(el).find('img').attr('src');
+                
+                if (title && link) {
+                    results.push({
+                        title,
+                        link,
+                        image: image || null
+                    });
+                }
             });
 
             res.json({
                 status: true,
-                page,
-                total: hasil.length,
-                data: hasil,
+                page: page,
+                total: results.length,
+                data: results.slice(0, 10)
             });
-
         } catch (err) {
             res.status(500).json({
                 status: false,
-                message: "Gagal mengambil data",
-                error: err.message,
+                error: err.message
             });
         }
     });

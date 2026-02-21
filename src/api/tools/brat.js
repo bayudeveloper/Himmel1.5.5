@@ -1,5 +1,4 @@
-const { createCanvas, registerFont } = require('canvas');
-const path = require('path');
+const { createCanvas } = require('@napi-rs/canvas');
 
 module.exports = function(app) {
     function generateBrat(text, size = 1080) {

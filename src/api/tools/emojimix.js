@@ -1,27 +1,45 @@
 const axios = require("axios");
-const cheerio = require("cheerio");
 
 module.exports = function(app) {
     async function emojiMix(emoji1, emoji2) {
         try {
-            const response = await axios.get(`https://emojimix.com/${encodeURIComponent(emoji1)}/${encodeURIComponent(emoji2)}`, {
+            // API dari emojimix.com
+            const response = await axios.get(`https://emojimix-api.jeff5m4.workers.dev/`, {
+                params: {
+                    e1: emoji1,
+                    e2: emoji2
+                },
+                timeout: 5000,
                 headers: {
                     'User-Agent': 'Mozilla/5.0'
                 }
             });
 
-            const $ = cheerio.load(response.data);
-            const image = $('meta[property="og:image"]').attr('content');
-            
-            if (image) {
+            if (response.data && response.data.url) {
                 return {
-                    image: image,
-                    url: `https://emojimix.com/${emoji1}/${emoji2}`
+                    image: response.data.url,
+                    emoji1,
+                    emoji2
                 };
             }
-            throw new Error('Emoji combination not found');
+
+            // Coba API alternatif
+            const response2 = await axios.get(`https://emojimix.vercel.app/api/${encodeURIComponent(emoji1)}/${encodeURIComponent(emoji2)}`, {
+                timeout: 5000
+            });
+
+            if (response2.data && response2.data.url) {
+                return {
+                    image: response2.data.url,
+                    emoji1,
+                    emoji2
+                };
+            }
+
+            throw new Error('No emoji mix found');
+
         } catch (err) {
-            throw err;
+            throw new Error(`Gagal menggabungkan emoji: ${err.message}`);
         }
     }
 

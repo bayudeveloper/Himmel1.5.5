@@ -11,61 +11,24 @@ module.exports = function(app) {
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, 0, size, size);
 
-            // Hitung font size berdasarkan panjang teks
-            let fontSize = Math.floor(size / 8); // start 135px untuk 1080
+            // SET WARNA HITAM untuk teks
+            ctx.fillStyle = "#000000";
             
-            // Set font
+            // Set font dengan ukuran besar (fix biar keliatan)
+            let fontSize = Math.floor(size / 4); // 270px untuk 1080 (lebih gede)
+            
+            // Coba dengan font default dulu
             ctx.font = `bold ${fontSize}px "Arial", "Helvetica", sans-serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillStyle = "#000000"; // Teks HITAM
 
-            // Ukur lebar teks
-            let textWidth = ctx.measureText(text).width;
-            
-            // Kurangi font size jika kepanjangan
-            while (textWidth > size * 0.9 && fontSize > 30) {
-                fontSize -= 5;
-                ctx.font = `bold ${fontSize}px "Arial", "Helvetica", sans-serif`;
-                textWidth = ctx.measureText(text).width;
-            }
+            // Log untuk debugging (hapus nanti)
+            console.log(`Generating brat for: "${text}" with font size: ${fontSize}`);
 
-            // Split teks jika terlalu panjang
-            const words = text.split(' ');
-            const maxWidth = size * 0.85;
-            
-            if (textWidth > maxWidth && words.length > 1) {
-                // Bikin baris-baris
-                let lines = [];
-                let currentLine = words[0];
-                
-                for (let i = 1; i < words.length; i++) {
-                    let testLine = currentLine + ' ' + words[i];
-                    let testWidth = ctx.measureText(testLine).width;
-                    
-                    if (testWidth > maxWidth) {
-                        lines.push(currentLine);
-                        currentLine = words[i];
-                    } else {
-                        currentLine = testLine;
-                    }
-                }
-                lines.push(currentLine);
-                
-                // Hitung posisi Y
-                const lineHeight = fontSize * 1.2;
-                const startY = (size / 2) - ((lines.length - 1) * lineHeight / 2);
-                
-                // Gambar tiap baris
-                lines.forEach((line, index) => {
-                    ctx.fillText(line, size / 2, startY + (index * lineHeight));
-                });
-            } else {
-                // Teks pendek, langsung gambar di tengah
-                ctx.fillText(text, size / 2, size / 2);
-            }
+            // Gambar teks dengan background hitam dulu buat test (hapus nanti)
+            ctx.fillText(text, size / 2, size / 2);
 
-            // Return buffer PNG
+            // Kembalikan buffer
             return canvas.toBuffer("image/png");
             
         } catch (err) {

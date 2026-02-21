@@ -49,6 +49,11 @@
           "path": "/downloader/drive?url="
         },
         {
+          "name": "Pinterest",
+          "desc": "Downloader Pinterest",
+          "path": "/downloader/pindown?url="
+        },
+        {
           "name": "SaveTube",
           "desc": "Download YouTube video/audio",
           "path": "/downloader/savetube?url=&format="

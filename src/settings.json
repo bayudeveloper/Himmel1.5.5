@@ -59,9 +59,9 @@
           "path": "/downloader/savetube?url=&format="
         },
         {
-          "name": "SoundCloud",
-          "desc": "Search tracks on SoundCloud",
-          "path": "/downloader/soundcloud?query="
+      "name": "SoundCloud Search",
+      "desc": "Search SoundCloud tracks",
+      "path": "/downloader/soundcloud/search?q="
         },
         {
           "name": "Terabox",

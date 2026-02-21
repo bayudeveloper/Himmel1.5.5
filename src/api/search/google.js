@@ -1,44 +1,53 @@
 const https = require("https");
+const cheerio = require("cheerio");
 
 module.exports = function(app) {
-    const SERPAPI_KEY = "0be5ff098bed53fb055200fa4628d44ff9863d8788c1f98c6069b4ca1773c3b5";
-    const BASE_URL = "https://serpapi.com/search.json";
-
-    function serpApiRequest(params) {
+    function googleSearch(query) {
         return new Promise((resolve, reject) => {
-            params.api_key = SERPAPI_KEY;
+            const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+            
+            const options = {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+            };
 
-            const queryString = Object.keys(params)
-                .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
-                .join("&");
-
-            const url = `${BASE_URL}?${queryString}`;
-
-            https.get(url, (res) => {
-                let data = "";
-
-                res.on("data", chunk => data += chunk);
-                res.on("end", () => {
+            https.get(url, options, (res) => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => {
                     try {
-                        const json = JSON.parse(data);
+                        const $ = cheerio.load(data);
+                        const results = [];
 
-                        if (json.error) {
-                            reject(new Error(json.error));
-                        } else {
-                            resolve(json);
-                        }
+                        $('div.g').each((i, el) => {
+                            const title = $(el).find('h3').text();
+                            const link = $(el).find('a').attr('href');
+                            const snippet = $(el).find('div.VwiC3b').text();
 
-                    } catch {
-                        reject(new Error("Gagal parse response"));
+                            if (title && link) {
+                                const cleanLink = link.split('&')[0].replace('/url?q=', '');
+                                if (cleanLink.startsWith('http')) {
+                                    results.push({
+                                        title,
+                                        link: cleanLink,
+                                        snippet: snippet || 'No description'
+                                    });
+                                }
+                            }
+                        });
+
+                        resolve(results.slice(0, 10));
+                    } catch (err) {
+                        reject(err);
                     }
                 });
-
-            }).on("error", reject);
+            }).on('error', reject);
         });
     }
 
     app.get("/search/google", async (req, res) => {
-        const { q, type = "google", num = 10 } = req.query;
+        const { q } = req.query;
 
         if (!q) {
             return res.status(400).json({
@@ -48,39 +57,14 @@ module.exports = function(app) {
         }
 
         try {
-            let params = { q, num };
-
-            switch (type) {
-                case "images":
-                    params.engine = "google";
-                    params.tbm = "isch";
-                    break;
-                case "news":
-                    params.engine = "google";
-                    params.tbm = "nws";
-                    break;
-                case "shopping":
-                    params.engine = "google";
-                    params.tbm = "shop";
-                    break;
-                case "youtube":
-                    params.engine = "youtube";
-                    params.search_query = q;
-                    delete params.q;
-                    break;
-                default:
-                    params.engine = "google";
-            }
-
-            const result = await serpApiRequest(params);
-
+            const results = await googleSearch(q);
+            
             res.json({
                 status: true,
-                type,
                 query: q,
-                result
+                total: results.length,
+                data: results
             });
-
         } catch (error) {
             res.status(500).json({
                 status: false,

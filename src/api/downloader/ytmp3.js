@@ -2,63 +2,56 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 module.exports = function(app) {
-    async function scrapeY2Mate(videoId) {
+    const BASE_URL = 'https://ssyoutube.com';
+
+    async function scrapeYtmp3(videoId) {
         try {
-            // Step 1: Dapatkan halaman utama
-            const mainPage = await axios.get('https://www.y2mate.com/id/youtube-mp3', {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            });
-
-            // Step 2: Extract token
-            const $ = cheerio.load(mainPage.data);
-            const token = $('input[name="_token"]').val();
-
-            // Step 3: Convert video
-            const convertResponse = await axios.post('https://www.y2mate.com/mates/analyzeV2/ajax', 
-                new URLSearchParams({
-                    '_token': token,
-                    'url': `https://www.youtube.com/watch?v=${videoId}`,
-                    'ajax': '1'
-                }), {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0',
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Origin': 'https://www.y2mate.com',
-                    'Referer': 'https://www.y2mate.com/id/youtube-mp3'
-                }
-            });
-
-            const convertData = convertResponse.data;
+            // Dapatkan halaman download
+            const downloadUrl = `https://ssyoutube.com/watch?v=${videoId}`;
             
-            // Step 4: Dapatkan link download MP3
-            const resultPage = await axios.post('https://www.y2mate.com/mates/convertV2/index', 
-                new URLSearchParams({
-                    '_token': token,
-                    'vid': convertData.vid,
-                    'k': convertData.links.mp3.mp3128.k
-                }), {
+            const response = await axios.get(downloadUrl, {
                 headers: {
-                    'User-Agent': 'Mozilla/5.0',
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Referer': 'https://www.youtube.com/'
+                }
+            });
+
+            const $ = cheerio.load(response.data);
+            
+            // Extract title
+            let title = $('h1').first().text().trim() || 
+                       $('title').text().replace('Download', '').trim() ||
+                       `YouTube Video ${videoId}`;
+
+            // Cari link MP3
+            let mp3Link = null;
+            $('a[href*=".mp3"]').each((i, el) => {
+                if (!mp3Link) {
+                    const link = $(el).attr('href');
+                    const quality = $(el).text().match(/\d+kbps/)?.[0] || '128kbps';
+                    if (link && link.startsWith('http')) {
+                        mp3Link = { url: link, quality: quality };
+                    }
                 }
             });
 
             return {
-                title: convertData.title,
+                title: title,
                 videoId: videoId,
-                download_url: resultPage.data.dlink
+                thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+                format: 'mp3',
+                quality: mp3Link?.quality || '128kbps',
+                download_url: mp3Link?.url || downloadUrl
             };
+
         } catch (err) {
-            throw new Error("Gagal scrape dari y2mate");
+            throw new Error(`Gagal scrape MP3: ${err.message}`);
         }
     }
 
     app.get("/downloader/ytmp3", async (req, res) => {
-        const url = req.query.url;
+        const { url } = req.query;
 
         if (!url) {
             return res.status(400).json({
@@ -68,7 +61,6 @@ module.exports = function(app) {
         }
 
         try {
-            // Ekstrak video ID
             const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^?&]+)/)?.[1];
             
             if (!videoId) {
@@ -78,50 +70,25 @@ module.exports = function(app) {
                 });
             }
 
-            // Scrape dari y2mate
-            const result = await scrapeY2Mate(videoId);
+            const result = await scrapeYtmp3(videoId);
 
             res.json({
                 status: true,
                 data: {
                     title: result.title,
                     videoId: result.videoId,
-                    thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-                    format: "mp3",
-                    quality: "128kbps",
+                    thumbnail: result.thumbnail,
+                    format: result.format,
+                    quality: result.quality,
                     download_url: result.download_url
                 }
             });
 
         } catch (err) {
-            // Fallback scraping dari savetube
-            try {
-                const savetubeRes = await axios.post('https://yt.savetube.me/api/download', {
-                    url: `https://www.youtube.com/watch?v=${videoId}`,
-                    format: 'mp3'
-                }, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0',
-                        'Origin': 'https://yt.savetube.me'
-                    }
-                });
-
-                res.json({
-                    status: true,
-                    data: {
-                        title: `YouTube Video ${videoId}`,
-                        videoId: videoId,
-                        thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-                        format: "mp3",
-                        download_url: savetubeRes.data.downloadUrl || savetubeRes.data.url
-                    }
-                });
-            } catch (fallbackErr) {
-                res.status(500).json({
-                    status: false,
-                    error: err.message
-                });
-            }
+            res.status(500).json({
+                status: false,
+                error: err.message
+            });
         }
     });
 };

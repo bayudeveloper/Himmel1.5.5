@@ -12,10 +12,7 @@ module.exports = function(app) {
                 'accept': 'application/json, text/plain, */*',
                 'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
                 'referer': 'https://akunlama.com/',
-                'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
-                'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
-                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             };
             this.recipient = crypto.randomBytes(8).toString('hex').substring(0, 10);
             this.lastCount = 0;
@@ -29,11 +26,11 @@ module.exports = function(app) {
             try {
                 const response = await axios.get(`${this.baseUrl}/api/list`, {
                     params: { recipient: this.recipient },
-                    headers: { ...this.headers, referer: `https://akunlama.com/inbox/${this.recipient}/list` },
+                    headers: this.headers,
                     timeout: 10000
                 });
                 return response.data;
-            } catch (err) {
+            } catch {
                 return [];
             }
         }
@@ -42,11 +39,11 @@ module.exports = function(app) {
             try {
                 const response = await axios.get(`${this.baseUrl}/api/getHtml`, {
                     params: { region: msg.storage.region, key: msg.storage.key },
-                    headers: { ...this.headers, referer: `https://akunlama.com/inbox/${this.recipient}/message/${msg.storage.region}/${msg.storage.key}` },
+                    headers: this.headers,
                     timeout: 10000
                 });
                 return response.data;
-            } catch (err) {
+            } catch {
                 return '';
             }
         }
@@ -72,12 +69,9 @@ module.exports = function(app) {
                             }
                             this.lastCount = inbox.length;
                         }
-                    } catch (err) {
-                        console.error("Error checking inbox:", err.message);
-                    }
+                    } catch (err) {}
                 }, 5000);
 
-                // Timeout after 2 minutes
                 setTimeout(() => {
                     clearInterval(interval);
                     resolve(null);
@@ -86,7 +80,7 @@ module.exports = function(app) {
         }
     }
 
-    class NananaGenerator {
+    class NanoBananaGenerator {
         constructor() {
             this.baseUrl = 'https://nanana.app';
             this.tempMail = new TempMailScraper();
@@ -97,10 +91,7 @@ module.exports = function(app) {
                 'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
                 'origin': this.baseUrl,
                 'referer': `${this.baseUrl}/en`,
-                'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
-                'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
-                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             };
         }
 
@@ -128,147 +119,125 @@ module.exports = function(app) {
         }
 
         async sendOtp(email) {
-            try {
-                const response = await axios.post(
-                    `${this.baseUrl}/api/auth/email-otp/send-verification-otp`,
-                    { email, type: 'sign-in' },
-                    { headers: this.defaultHeaders, timeout: 15000 }
-                );
-                return response.data;
-            } catch (err) {
-                throw new Error(`Send OTP failed: ${err.message}`);
-            }
+            await axios.post(
+                `${this.baseUrl}/api/auth/email-otp/send-verification-otp`,
+                { email, type: 'sign-in' },
+                { headers: this.defaultHeaders, timeout: 15000 }
+            );
         }
 
         async verifyOtp(email, otp) {
-            try {
-                const response = await axios.post(
-                    `${this.baseUrl}/api/auth/sign-in/email-otp`,
-                    { email, otp },
-                    { 
-                        headers: this.defaultHeaders, 
-                        withCredentials: true,
-                        timeout: 15000
-                    }
-                );
-                
-                const setCookie = response.headers['set-cookie'];
-                if (setCookie && setCookie.length > 0) {
-                    const sessionCookie = setCookie.find(c => c.includes('__Secure-better-auth.session_token'));
-                    if (sessionCookie) {
-                        this.sessionToken = sessionCookie.split(';')[0];
-                        this.cookieString = this.sessionToken;
-                    }
+            const response = await axios.post(
+                `${this.baseUrl}/api/auth/sign-in/email-otp`,
+                { email, otp },
+                { headers: this.defaultHeaders, withCredentials: true, timeout: 15000 }
+            );
+            
+            const setCookie = response.headers['set-cookie'];
+            if (setCookie && setCookie.length > 0) {
+                const sessionCookie = setCookie.find(c => c.includes('__Secure-better-auth.session_token'));
+                if (sessionCookie) {
+                    this.sessionToken = sessionCookie.split(';')[0];
+                    this.cookieString = this.sessionToken;
                 }
-                
-                return response.data;
-            } catch (err) {
-                throw new Error(`Verify OTP failed: ${err.message}`);
             }
         }
 
         async uploadImage(imagePath) {
-            try {
-                const form = new FormData();
-                form.append('image', fs.createReadStream(imagePath));
+            const form = new FormData();
+            form.append('image', fs.createReadStream(imagePath));
 
-                const response = await axios.post(
-                    `${this.baseUrl}/api/upload-img`,
-                    form,
-                    {
-                        headers: {
-                            ...this.defaultHeaders,
-                            ...form.getHeaders(),
-                            'Cookie': this.cookieString,
-                            'x-fp-id': this.generateFpId()
-                        },
-                        timeout: 30000
-                    }
-                );
+            const response = await axios.post(
+                `${this.baseUrl}/api/upload-img`,
+                form,
+                {
+                    headers: {
+                        ...this.defaultHeaders,
+                        ...form.getHeaders(),
+                        'Cookie': this.cookieString,
+                        'x-fp-id': this.generateFpId()
+                    },
+                    timeout: 30000
+                }
+            );
 
-                return response.data;
-            } catch (err) {
-                throw new Error(`Upload image failed: ${err.message}`);
-            }
+            return response.data;
         }
 
         async generateImage(imageUrl, prompt) {
-            try {
-                const response = await axios.post(
-                    `${this.baseUrl}/api/image-to-image`,
-                    { prompt, image_urls: [imageUrl] },
-                    {
-                        headers: {
-                            ...this.defaultHeaders,
-                            'content-type': 'application/json',
-                            'Cookie': this.cookieString,
-                            'x-fp-id': this.generateFpId()
-                        },
-                        timeout: 30000
-                    }
-                );
+            const response = await axios.post(
+                `${this.baseUrl}/api/image-to-image`,
+                { prompt, image_urls: [imageUrl] },
+                {
+                    headers: {
+                        ...this.defaultHeaders,
+                        'content-type': 'application/json',
+                        'Cookie': this.cookieString,
+                        'x-fp-id': this.generateFpId()
+                    },
+                    timeout: 30000
+                }
+            );
 
-                return response.data;
-            } catch (err) {
-                throw new Error(`Generate image failed: ${err.message}`);
-            }
+            return response.data;
         }
 
         async getResult(requestId) {
-            try {
-                const response = await axios.post(
-                    `${this.baseUrl}/api/get-result`,
-                    { requestId, type: 'image-to-image' },
-                    {
-                        headers: {
-                            ...this.defaultHeaders,
-                            'content-type': 'application/json',
-                            'Cookie': this.cookieString,
-                            'x-fp-id': this.generateFpId()
-                        },
-                        timeout: 15000
-                    }
-                );
+            const response = await axios.post(
+                `${this.baseUrl}/api/get-result`,
+                { requestId, type: 'image-to-image' },
+                {
+                    headers: {
+                        ...this.defaultHeaders,
+                        'content-type': 'application/json',
+                        'Cookie': this.cookieString,
+                        'x-fp-id': this.generateFpId()
+                    },
+                    timeout: 15000
+                }
+            );
 
-                return response.data;
-            } catch (err) {
-                throw new Error(`Get result failed: ${err.message}`);
-            }
+            return response.data;
         }
 
         async processImage(imagePath, prompt) {
-            try {
-                const uploadResult = await this.uploadImage(imagePath);
-                if (!uploadResult || !uploadResult.url) {
-                    throw new Error("Upload failed: no URL returned");
-                }
-
-                const generateResult = await this.generateImage(uploadResult.url, prompt);
-                if (!generateResult || !generateResult.request_id) {
-                    throw new Error("Generation failed: no request_id");
-                }
-
-                const maxAttempts = 30; // 60 seconds max (2s * 30)
-                for (let i = 0; i < maxAttempts; i++) {
-                    const result = await this.getResult(generateResult.request_id);
-                    
-                    if (result.completed) {
-                        return result;
-                    }
-                    
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                }
-
-                throw new Error("Timeout waiting for result");
-            } catch (err) {
-                throw new Error(`Process image failed: ${err.message}`);
+            const uploadResult = await this.uploadImage(imagePath);
+            if (!uploadResult || !uploadResult.url) {
+                throw new Error("Upload failed: no URL returned");
             }
+
+            const generateResult = await this.generateImage(uploadResult.url, prompt);
+            if (!generateResult || !generateResult.request_id) {
+                throw new Error("Generation failed: no request_id");
+            }
+
+            const maxAttempts = 30;
+            for (let i = 0; i < maxAttempts; i++) {
+                const result = await this.getResult(generateResult.request_id);
+                
+                if (result.completed) {
+                    return result;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+
+            throw new Error("Timeout waiting for result");
         }
     }
 
-    // POST endpoint - upload file langsung
-    app.post('/ai/nanana', async (req, res) => {
+    // POST endpoint - dengan parameter prompt di query
+    app.post('/ai/nanobanana', async (req, res) => {
         try {
+            const { prompt } = req.query;
+            
+            if (!prompt) {
+                return res.status(400).json({
+                    status: false,
+                    message: "Parameter 'prompt' wajib diisi! Contoh: /ai/nanobanana?prompt=konser"
+                });
+            }
+
             if (!req.files || !req.files.image) {
                 return res.status(400).json({
                     status: false,
@@ -276,27 +245,19 @@ module.exports = function(app) {
                 });
             }
 
-            const { prompt } = req.body;
-            if (!prompt) {
-                return res.status(400).json({
-                    status: false,
-                    message: "Parameter 'prompt' wajib diisi"
-                });
-            }
-
             const imageFile = req.files.image;
-            const tempPath = path.join('/tmp', `nanana_${Date.now()}_${imageFile.name}`);
+            const tempPath = path.join('/tmp', `nanobanana_${Date.now()}_${imageFile.name}`);
             
             // Simpan file sementara
             await imageFile.mv(tempPath);
 
             try {
-                const generator = new NananaGenerator();
+                const generator = new NanoBananaGenerator();
                 
                 // Initialize with temp mail
                 await generator.initialize();
 
-                // Process image
+                // Process image dengan prompt dari query
                 const result = await generator.processImage(tempPath, prompt);
 
                 // Hapus file sementara
@@ -304,6 +265,7 @@ module.exports = function(app) {
 
                 res.json({
                     status: true,
+                    prompt: prompt,
                     data: result
                 });
 
@@ -324,20 +286,23 @@ module.exports = function(app) {
     });
 
     // GET endpoint - info
-    app.get('/ai/nanana', (req, res) => {
+    app.get('/ai/nanobanana', (req, res) => {
         res.json({
             status: true,
-            name: "Nanana Image Generator",
-            description: "Generate images using AI with image-to-image transformation",
+            name: "NanoBanana AI Image Generator",
+            description: "Transform images using AI with custom prompts",
             usage: {
                 method: "POST",
-                endpoint: "/ai/nanana",
+                endpoint: "/ai/nanobanana?prompt=YOUR_PROMPT",
                 body: {
-                    image: "file (multipart/form-data)",
-                    prompt: "string - description of desired transformation"
+                    image: "file (multipart/form-data)"
                 }
             },
-            example: "curl -X POST -F 'image=@photo.jpg' -F 'prompt=konser' http://localhost:3000/ai/nanana"
+            examples: [
+                "/ai/nanobanana?prompt=konser",
+                "/ai/nanobanana?promput=cyberpunk",
+                "/ai/nanobanana?prompt=anime%20style"
+            ]
         });
     });
 };

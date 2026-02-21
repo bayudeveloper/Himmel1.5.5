@@ -11,11 +11,9 @@ body {
     padding-top: 100px;
     background: linear-gradient(135deg, #f5f7fa 0%, #e9ecf5 100%);
     min-height: 100vh;
-    position: relative;
-    overflow-x: hidden;
 }
 
-/* Simple Minimal Clouds */
+/* Simple static clouds - no animation */
 .cloud {
     position: fixed;
     background: rgba(255, 255, 255, 0.6);
@@ -37,8 +35,7 @@ body {
     width: 120px;
     height: 35px;
     top: 15%;
-    left: -120px;
-    animation: moveCloudSlow 50s linear infinite;
+    left: 5%;
 }
 
 .cloud-1::before {
@@ -59,8 +56,7 @@ body {
     width: 150px;
     height: 40px;
     bottom: 20%;
-    right: -150px;
-    animation: moveCloudSlow 45s linear infinite reverse;
+    right: 5%;
 }
 
 .cloud-2::before {
@@ -77,16 +73,7 @@ body {
     left: 70px;
 }
 
-@keyframes moveCloudSlow {
-    from {
-        transform: translateX(0);
-    }
-    to {
-        transform: translateX(calc(100vw + 200px));
-    }
-}
-
-/* ===== AESTHETIC LOADING SCREEN ===== */
+/* Simple loading screen - no animations */
 #loadingScreen {
     position: fixed;
     top: 0;
@@ -98,7 +85,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.3s ease;
 }
 
 #loadingScreen.fade-out {
@@ -111,166 +98,41 @@ body {
     width: 100%;
     max-width: 500px;
     padding: 2rem;
-}
-
-/* Animated Background Circles */
-.loader-circles {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    height: 100%;
-}
-
-.circle {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.03);
-    animation: circlePulse 4s ease-in-out infinite;
-}
-
-.circle-1 {
-    width: 300px;
-    height: 300px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation-delay: 0s;
-}
-
-.circle-2 {
-    width: 400px;
-    height: 400px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation-delay: 1s;
-}
-
-.circle-3 {
-    width: 500px;
-    height: 500px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation-delay: 2s;
-}
-
-@keyframes circlePulse {
-    0%, 100% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 0.03;
-    }
-    50% {
-        transform: translate(-50%, -50%) scale(1.1);
-        opacity: 0.06;
-    }
-}
-
-.loader-content {
-    position: relative;
-    z-index: 2;
     text-align: center;
 }
 
-/* GIF Frame */
+/* Static GIF frame */
 .gif-frame {
-    position: relative;
-    width: 240px;
-    height: 240px;
-    margin: 0 auto 30px;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 20px;
 }
 
 .gif-wrapper {
-    position: relative;
     width: 100%;
     height: 100%;
-    border-radius: 30px;
+    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.4),
-        0 0 0 2px rgba(255, 255, 255, 0.05);
-    animation: frameFloat 3s ease-in-out infinite;
-}
-
-@keyframes frameFloat {
-    0%, 100% {
-        transform: translateY(0) rotate(0deg);
-    }
-    50% {
-        transform: translateY(-8px) rotate(0.5deg);
-    }
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
 .loader-gif {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
 }
 
-.gif-reflection {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.2) 0%,
-        rgba(255, 255, 255, 0) 50%,
-        rgba(0, 0, 0, 0.1) 100%);
-    pointer-events: none;
-}
-
-/* Loading Text with Particles */
+/* Simple text */
 .loader-text {
-    font-size: 2rem;
+    font-size: 1.8rem;
     font-weight: 500;
-    margin-bottom: 25px;
-    display: flex;
-    justify-content: center;
-    gap: 4px;
+    margin-bottom: 20px;
     color: rgba(255, 255, 255, 0.9);
 }
 
-.text-particle, .dot-particle {
-    display: inline-block;
-    animation: particleFloat 1.4s ease-in-out infinite;
-    animation-delay: calc(0.1s * var(--i));
-    text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-}
-
-.dot-particle {
-    animation: dotPulse 1.4s ease-in-out infinite;
-}
-
-@keyframes particleFloat {
-    0%, 100% {
-        transform: translateY(0);
-        opacity: 0.9;
-    }
-    50% {
-        transform: translateY(-6px);
-        opacity: 1;
-        text-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
-    }
-}
-
-@keyframes dotPulse {
-    0%, 100% {
-        opacity: 0.5;
-        transform: scale(1);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1.2);
-    }
-}
-
-/* Minimal Progress Bar */
+/* Progress bar */
 .progress-minimal {
-    width: 220px;
+    width: 200px;
     height: 2px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
@@ -282,68 +144,25 @@ body {
     height: 100%;
     width: 0%;
     background: linear-gradient(90deg, #a5b4fc, #c4b5fd);
-    border-radius: 10px;
     transition: width 0.3s ease;
-}
-
-/* Subtle Glow */
-.loader-glow {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle at center, 
-        rgba(165, 180, 252, 0.1) 0%,
-        transparent 70%);
-    filter: blur(30px);
-    z-index: -1;
-    animation: glowBreath 3s ease-in-out infinite;
-}
-
-@keyframes glowBreath {
-    0%, 100% {
-        opacity: 0.5;
-        transform: translate(-50%, -50%) scale(1);
-    }
-    50% {
-        opacity: 0.8;
-        transform: translate(-50%, -50%) scale(1.1);
-    }
 }
 
 /* Navbar */
 .navbar {
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     padding: 12px 32px;
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 100;
-    transition: all 0.3s ease;
     border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-.navbar.scrolled {
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
 
 .navbar-brand {
     color: #2c3e50;
     font-weight: 600;
-    opacity: 0;
-    transform: translateY(-5px);
-    transition: all 0.3s ease;
-}
-
-.navbar-brand.visible {
-    opacity: 1;
-    transform: translateY(0);
 }
 
 /* Name Container */
@@ -362,7 +181,6 @@ body {
     background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-clip: text;
 }
 
 .version-badge {
@@ -372,27 +190,19 @@ body {
     font-size: 0.7rem;
     font-weight: 600;
     border-radius: 100px;
-    letter-spacing: 0.3px;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
 }
 
 /* Banner */
 .banner-wrapper {
-    position: relative;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
 }
 
 .banner {
     width: 100%;
     height: auto;
     display: block;
-    transition: transform 0.4s ease;
-}
-
-.banner:hover {
-    transform: scale(1.01);
 }
 
 /* Description */
@@ -424,17 +234,16 @@ body {
     border: none;
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     border-radius: 10px;
     font-size: 0.95rem;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
-    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    width: 100%;
 }
 
 #searchInput:focus {
     outline: none;
     background: white;
-    box-shadow: 0 5px 20px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.1);
 }
 
 /* API Items */
@@ -445,21 +254,18 @@ body {
 .hero-section {
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     padding: 12px 16px;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
 }
 
 .hero-section:hover {
-    transform: translateY(-2px);
     background: white;
-    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.08);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.08);
 }
 
 .hero-section > div {
@@ -488,12 +294,11 @@ body {
     padding: 6px 14px;
     font-size: 0.8rem;
     font-weight: 500;
-    transition: all 0.2s ease;
+    cursor: pointer;
 }
 
 .get-api-btn:hover {
     background: #3b82f6;
-    transform: scale(0.98);
 }
 
 /* Category Header */
@@ -502,20 +307,8 @@ body {
     font-weight: 600;
     color: #1e293b;
     margin: 25px 0 15px;
-    position: relative;
     padding-left: 12px;
-}
-
-.category-header::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 20px;
-    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-    border-radius: 100px;
+    border-left: 3px solid #3b82f6;
 }
 
 /* API Links */
@@ -526,35 +319,18 @@ body {
     margin-right: 16px;
     margin-bottom: 8px;
     padding: 3px 0;
-    position: relative;
     font-size: 0.9rem;
-    transition: color 0.2s ease;
-}
-
-#apiLinks a::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 0;
-    height: 1px;
-    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-    transition: width 0.2s ease;
+    border-bottom: 1px solid transparent;
 }
 
 #apiLinks a:hover {
     color: #3b82f6;
-}
-
-#apiLinks a:hover::after {
-    width: 100%;
+    border-bottom-color: #3b82f6;
 }
 
 /* Modal */
 .modal-content {
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: white;
     border: none;
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
@@ -610,6 +386,7 @@ body {
     border-radius: 8px;
     padding: 8px 12px;
     font-size: 0.9rem;
+    width: 100%;
 }
 
 .form-control:focus {
@@ -642,15 +419,15 @@ body {
     }
 
     .gif-frame {
-        width: 180px;
-        height: 180px;
+        width: 150px;
+        height: 150px;
     }
 
     .loader-text {
-        font-size: 1.6rem;
+        font-size: 1.4rem;
     }
 
     .progress-minimal {
-        width: 180px;
+        width: 150px;
     }
 }

@@ -59,9 +59,9 @@
           "path": "/downloader/savetube?url=&format="
         },
         {
-      "name": "SoundCloud Search",
-      "desc": "Search SoundCloud tracks",
-      "path": "/downloader/soundcloud/search?q="
+      "name": "SoundCloud Download",
+      "desc": "Download SoundCloud tracks",
+      "path": "/downloader/soundcloud/download?url="
         },
         {
           "name": "Terabox",
@@ -137,6 +137,11 @@
           "name": "Komiku",
           "desc": "Search manga on Komiku",
           "path": "/search/komiku?q="
+        },
+       {
+      "name": "SoundCloud Search",
+      "desc": "Search SoundCloud tracks",
+      "path": "/downloader/soundcloud/search?q="
         },
         {
           "name": "YouTube",

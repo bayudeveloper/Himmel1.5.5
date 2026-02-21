@@ -27,26 +27,28 @@
     }
   ],
   "categories": [
- {
-  "name": "AI (人工知能)",
-  "items": [
-       {
-      "name": "HydroMind",
-      "desc": "Talk with hydromind AI",
-      "path": "/ai/hydromind?text=&model="
+    {
+      "name": "AI (人工知能)",
+      "items": [
+        {
+          "name": "HydroMind",
+          "desc": "Talk with hydromind AI",
+          "path": "/ai/hydromind?text=&model="
         },
         {
-  "name": "NanoBanana",
-  "desc": "AI Image Generator - Transform images with prompts (need image_url)",
-  "path": "/ai/nanobanana?prompt=&image_url="
-        },
-        {
+          "name": "NanoBanana",
+          "desc": "AI Image Generator - Transform images with prompts (need image_url)",
+          "path": "/ai/nanobanana?prompt=&image_url="
+        }
+      ]
+    },
+    {
       "name": "Downloader (ダウンローダー)",
       "items": [
         {
-"name": "Facebook",
-"desc": "Download Facebook videos",
-"path": "/downloader/facebook?url="
+          "name": "Facebook",
+          "desc": "Download Facebook videos",
+          "path": "/downloader/facebook?url="
         },
         {
           "name": "Google Drive",
@@ -64,9 +66,9 @@
           "path": "/downloader/savetube?url=&format="
         },
         {
-      "name": "SoundCloud Download",
-      "desc": "Download SoundCloud tracks",
-      "path": "/downloader/soundcloud/download?url="
+          "name": "SoundCloud Download",
+          "desc": "Download SoundCloud tracks",
+          "path": "/downloader/soundcloud/download?url="
         },
         {
           "name": "Terabox",
@@ -104,23 +106,23 @@
           "path": "/info/alightmotion?url="
         },
         {
-      "name": "Tri Check",
-      "desc": "Check 3 (Tri) Indonesia SIM card status",
-      "path": "/info/tricheck?nomor="
-       },
-       {
+          "name": "Tri Check",
+          "desc": "Check 3 (Tri) Indonesia SIM card status",
+          "path": "/info/tricheck?nomor="
+        },
+        {
           "name": "Cek Kuota XL & Axis",
           "desc": "Check XL/AXIS quota, package, and subscriber information",
           "path": "/info/cekxL?nomor="
-       },
-       {
+        },
+        {
           "name": "Weather",
           "desc": "Weather information by city",
           "path": "/info/weather?city="
-       }
-       ]
-       },
-        {
+        }
+      ]
+    },
+    {
       "name": "Random (ランダム)",
       "items": [
         {
@@ -143,10 +145,10 @@
           "desc": "Search manga on Komiku",
           "path": "/search/komiku?q="
         },
-       {
-      "name": "SoundCloud Search",
-      "desc": "Search SoundCloud tracks",
-      "path": "/downloader/soundcloud/search?q="
+        {
+          "name": "SoundCloud Search",
+          "desc": "Search SoundCloud tracks",
+          "path": "/downloader/soundcloud/search?q="
         },
         {
           "name": "YouTube",

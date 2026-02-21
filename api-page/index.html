@@ -1,198 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="https://files.catbox.moe/rbfc5x.jpg" type="image/jpeg">
-    <title>Himmel API - Akademiya</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title id="page">Himmel API</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <!-- Animated Clouds -->
-    <div class="cloud-bg"></div>
-    <div class="cloud-bg cloud-2"></div>
-    <div class="cloud-bg cloud-3"></div>
+    <div class="cloud cloud-1"></div>
+    <div class="cloud cloud-2"></div>
+    <div class="cloud cloud-3"></div>
+    <div class="cloud cloud-4"></div>
     
-    <!-- Loading Screen -->
     <div id="loadingScreen">
-        <div class="loader-content">
-            <div class="loader-icon">
-                <img src="https://files.catbox.moe/7sayat.jpg" alt="chibi" class="loader-chibi">
+        <div class="spinner-wrapper">
+            <img src="https://files.catbox.moe/7sayat.jpg" alt="Chibi" class="loading-chibi">
+            <div class="spinner-border text-dark mb-2" role="status">
+                <span class="visually-hidden">Loading...</span>
             </div>
-            <div class="loader-spinner"></div>
-            <p class="loader-text">Himmel Akademiya</p>
+            <p>Loading...</p>
         </div>
     </div>
-
-    <!-- Mobile Layout (9:16) -->
-    <div class="app-container">
-        <!-- Top Navigation -->
-        <nav class="top-nav">
-            <div class="nav-left">
-                <button class="menu-btn">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-                <span class="nav-title">Himmel-Apii</span>
-            </div>
-            <div class="nav-right">
-                <button class="icon-btn search-icon">
-                    <svg viewBox="0 0 24 24" width="20" height="20">
-                        <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                    </svg>
-                </button>
-                <button class="icon-btn message-icon">
-                    <svg viewBox="0 0 24 24" width="20" height="20">
-                        <path fill="currentColor" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-                    </svg>
-                </button>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Profile Section -->
-            <div class="profile-section">
-                <div class="profile-header">
-                    <img src="https://files.catbox.moe/7sayat.jpg" alt="profile" class="profile-avatar">
-                    <div class="profile-info">
-                        <h2 id="header" class="profile-name">Himmel-Apii</h2>
-                        <span id="versionHeader" class="profile-status">Online</span>
-                    </div>
-                </div>
-                <p id="description" class="profile-bio">Simple and Easy-to-Use API Documentation</p>
-                <div class="profile-actions">
-                    <button class="action-btn primary">Read More</button>
-                    <button class="action-btn secondary">Artwork ></button>
-                </div>
-            </div>
-
-            <!-- Tags/Categories -->
-            <div class="tags-section">
-                <span class="tag active">About Me</span>
-                <span class="tag">Contact Me</span>
-                <span class="tag">バニ</span>
-                <span class="tag">接触</span>
-            </div>
-
-            <!-- Recent Search -->
-            <div class="recent-section">
-                <h3 class="section-title">Recent Search</h3>
-                <div class="recent-list">
-                    <a href="#" class="recent-item">
-                        <span class="recent-icon">🔍</span>
-                        <span class="recent-text">Layla ascension material</span>
-                    </a>
-                    <a href="#" class="recent-item">
-                        <span class="recent-icon">🔍</span>
-                        <span class="recent-text">Layla build</span>
-                    </a>
-                    <a href="#" class="recent-item">
-                        <span class="recent-icon">🔍</span>
-                        <span class="recent-text">Kalpalata lotus locations</span>
-                    </a>
-                    <a href="#" class="recent-item">
-                        <span class="recent-icon">🔍</span>
-                        <span class="recent-text">Layla cosplay</span>
-                    </a>
-                    <a href="#" class="recent-item">
-                        <span class="recent-icon">🔍</span>
-                        <span class="recent-text">Layla Wallpaper</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Categories -->
-            <div class="categories-section">
-                <!-- AI Category -->
-                <div class="category-block">
-                    <h3 class="category-title">
-                        AI <span class="category-sub">(人工知能)</span>
-                    </h3>
-                    <div id="apiContent" class="api-grid">
-                        <!-- Dynamic content will be inserted here -->
-                    </div>
-                </div>
-
-                <!-- Random Category -->
-                <div class="category-block">
-                    <h3 class="category-title">
-                        Random <span class="category-sub">(ランダム)</span>
-                    </h3>
-                    <div class="api-grid" id="randomContent"></div>
-                </div>
-            </div>
-
-            <!-- Info Cards -->
-            <div class="info-cards">
-                <div class="info-card">
-                    <h4 class="info-title">Cryo character</h4>
-                    <p class="info-desc">Cryo is one of the seven Elements. She is associated with the Tarawihs, whose domain is Snezhanyya.</p>
-                </div>
-                <div class="info-card">
-                    <h4 class="info-title">Sumeru</h4>
-                    <p class="info-desc">Sumeru is one of the seven regions of Teyvant. It is the region that worships Lesser Lord Kuronah, the Dendro Archon.</p>
-                </div>
-                <div class="info-card">
-                    <h4 class="info-title">Akademiya</h4>
-                    <p class="info-desc">The Sumerian Academy is Sumeru's main governing body, as well as the most prestigious institute in all of Teyvant.</p>
-                </div>
-            </div>
-        </main>
-
-        <!-- Bottom Navigation -->
-        <nav class="bottom-nav">
-            <button class="nav-item active">
-                <svg viewBox="0 0 24 24" width="22" height="22">
-                    <path fill="currentColor" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                </svg>
-                <span>Home</span>
-            </button>
-            <button class="nav-item">
-                <svg viewBox="0 0 24 24" width="22" height="22">
-                    <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5z"/>
-                </svg>
-                <span>Search</span>
-            </button>
-            <button class="nav-item">
-                <svg viewBox="0 0 24 24" width="22" height="22">
-                    <path fill="currentColor" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-                </svg>
-                <span>Message</span>
-            </button>
-            <button class="nav-item">
-                <svg viewBox="0 0 24 24" width="22" height="22">
-                    <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                </svg>
-                <span>Login</span>
-            </button>
-        </nav>
+    
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" style="display: flex; align-items: center;">
+                <span id="header" class="me-2"></span>
+                <div id="versionHeader" class="version-badge"></div>
+            </a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="banner-wrapper">
+            <img id="dynamicImage" class="banner mb-4" src="">
+        </div>
+        
+        <div id="nameContainer" class="name-container">
+            <h1 id="name"></h1>
+            <div id="version" class="version-badge"></div>
+        </div>
+        
+        <p id="description" class="lead mb-3"></p>
+        <div id="apiLinks" class="mb-5"></div>
+        
+        <div class="search-wrapper">
+            <input type="text" id="searchInput" class="form-control mb-5" placeholder="Cari API...">
+        </div>
+        
+        <div class="tab-content" id="apiContent"></div>
     </div>
-
-    <!-- Modal -->
-    <div class="modal fade" id="apiResponseModal" tabindex="-1">
-        <div class="modal-dialog">
+    
+    <div class="modal fade" id="apiResponseModal" tabindex="-1" aria-labelledby="apiResponseModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" id="modalDialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
                         <h5 class="modal-title" id="apiResponseModalLabel"></h5>
-                        <p class="modal-subtitle" id="apiResponseModalDesc"></p>
+                        <p class="modal-desc text-muted mb-0" id="apiResponseModalDesc" style="font-size: 14px;"></p>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <pre id="apiEndpoint" class="code-block"></pre>
+                    <pre id="apiEndpoint" class="api-endpoint"></pre>
                     <div id="apiQueryInputContainer"></div>
-                    <div id="apiResponseLoading" class="spinner-wrapper d-none">
-                        <div class="spinner"></div>
+                    <div id="apiResponseLoading" class="d-none d-flex justify-content-center align-items-center" style="height: 100px;">
+                        <div class="spinner-border custom-spinner" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
                     </div>
-                    <pre id="apiResponseContent" class="code-block d-none"></pre>
+                    <pre id="apiResponseContent" class="d-none mt-2 api-response"></pre>
                 </div>
                 <div class="modal-footer">
-                    <button id="submitQueryBtn" class="btn-submit">Submit</button>
+                    <button id="submitQueryBtn" class="btn btn-himmel">Submit</button>
                 </div>
             </div>
         </div>

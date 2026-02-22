@@ -51,11 +51,6 @@
       "name": "Downloader (ダウンローダー)",
       "items": [
         {
-          "name": "Facebook",
-          "desc": "Download Facebook videos",
-          "path": "/downloader/snapsave?url="
-        },
-        {
           "name": "Google Drive",
           "desc": "Download from Google Drive link",
           "path": "/downloader/drive?url="
@@ -139,11 +134,6 @@
           "name": "Komiku",
           "desc": "Search manga on Komiku",
           "path": "/search/komiku?q="
-        },
-        {
-          "name": "Pinterest",
-          "desc": "Search foto and video",
-          "path": "/search/pinterest?q=anime"
         },
         {
           "name": "YouTube",

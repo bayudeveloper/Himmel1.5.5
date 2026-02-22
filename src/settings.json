@@ -41,9 +41,9 @@
           "path": "/ai/nanana?url=&prompt="
         },
         {
-          "name": "Pipit",
-          "desc": "Ai Video Generator",
-          "path": "/ai/pipit?prompt="
+          "name": "Pollinations",
+          "desc": "Ai Video/image Generator",
+          "path": "/ai/pollinations?prompt=&type="
         }
       ]
     },

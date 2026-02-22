@@ -39,6 +39,11 @@
           "name": "NanoBanana",
           "desc": "AI Image Generator - Transform images with prompts (need image_url)",
           "path": "/ai/nanana?url=&prompt="
+        },
+        {
+          "name": "Pipit",
+          "desc": "Ai Video Generator",
+          "path": "/ai/pipit?prompt="
         }
       ]
     },

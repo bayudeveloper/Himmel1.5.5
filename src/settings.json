@@ -53,7 +53,7 @@
         {
           "name": "Facebook",
           "desc": "Download Facebook videos",
-          "path": "/downloader/facebook?url="
+          "path": "/downloader/snapsave?url="
         },
         {
           "name": "Google Drive",

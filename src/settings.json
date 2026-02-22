@@ -41,9 +41,9 @@
           "path": "/ai/nanana?url=&prompt="
         },
         {
-          "name": "Deepsek",
-          "desc": "Deepsek Chatbot",
-          "path": "/ai/deepseek?text="
+          "name": "BlackBox",
+          "desc": "BlackBox Chatbot",
+          "path": "/ai/blackbox?text="
         }
       ]
     },

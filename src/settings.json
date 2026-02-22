@@ -41,9 +41,9 @@
           "path": "/ai/nanana?url=&prompt="
         },
         {
-          "name": "Pollinations",
-          "desc": "Ai Video/image Generator",
-          "path": "/ai/pollinations?prompt=&type="
+          "name": "Deepsek",
+          "desc": "Deepsek Chatbot",
+          "path": "/ai/deepseek?text="
         }
       ]
     },

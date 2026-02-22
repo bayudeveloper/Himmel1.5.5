@@ -1,5 +1,4 @@
 const axios = require('axios');
-const crypto = require('crypto');
 
 module.exports = function(app) {
 
@@ -14,74 +13,52 @@ module.exports = function(app) {
         }
 
         try {
-            const msgId = crypto.randomUUID();
-            const sessionId = crypto.randomUUID();
+            // Step 1: Ambil token VQD dari DuckDuckGo
+            const statusRes = await axios.get('https://duckduckgo.com/duckchat/v1/status', {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'x-vqd-accept': '1'
+                },
+                timeout: 10000
+            });
 
-            const response = await axios.post('https://www.blackbox.ai/api/chat', {
+            const vqd = statusRes.headers['x-vqd-4'];
+            if (!vqd) throw new Error('Gagal mendapatkan token VQD');
+
+            // Step 2: Kirim pesan
+            const chatRes = await axios.post('https://duckduckgo.com/duckchat/v1/chat', {
+                model: 'gpt-4o-mini',
                 messages: [
-                    {
-                        id: msgId,
-                        content: text,
-                        role: 'user'
-                    }
-                ],
-                id: sessionId,
-                previewToken: null,
-                userId: null,
-                codeModelMode: true,
-                agentMode: {},
-                trendingAgentMode: {},
-                isMicMode: false,
-                maxTokens: 1024,
-                playgroundTopP: null,
-                playgroundTemperature: null,
-                isChromeExt: false,
-                githubToken: null,
-                clickedAnswer2: false,
-                clickedAnswer3: false,
-                clickedForceWebSearch: false,
-                visitFromDelta: false,
-                mobileClient: false,
-                userSelectedModel: null,
-                validated: '69783381-2ce4-4dbd-ac78-35e9063feabc'
+                    { role: 'user', content: text }
+                ]
             }, {
                 headers: {
                     'Content-Type': 'application/json',
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': '*/*',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'Origin': 'https://www.blackbox.ai',
-                    'Referer': 'https://www.blackbox.ai/',
-                    'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-                    'sec-ch-ua-mobile': '?0',
-                    'sec-ch-ua-platform': '"Windows"',
-                    'sec-fetch-dest': 'empty',
-                    'sec-fetch-mode': 'cors',
-                    'sec-fetch-site': 'same-origin'
+                    'Accept': 'text/event-stream',
+                    'x-vqd-4': vqd,
+                    'Origin': 'https://duckduckgo.com',
+                    'Referer': 'https://duckduckgo.com/'
                 },
-                timeout: 30000
+                timeout: 30000,
+                responseType: 'text'
             });
 
-            let result = response.data;
-
-            if (typeof result === 'object') {
-                result = result?.response || result?.message || result?.choices?.[0]?.message?.content || JSON.stringify(result);
+            // Parse SSE response
+            let result = '';
+            const lines = chatRes.data.split('\n');
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6).trim();
+                    if (data === '[DONE]') break;
+                    try {
+                        const json = JSON.parse(data);
+                        if (json.message) result += json.message;
+                    } catch (e) {}
+                }
             }
 
-            if (typeof result === 'string') {
-                // Bersihkan token aneh dari Blackbox
-                result = result
-                    .replace(/\$@\$v=undefined-rv1\$@\$/g, '')
-                    .replace(/\$@\$.+?\$@\$/g, '')
-                    .trim();
-            }
-
-            if (!result) {
-                return res.status(500).json({
-                    status: false,
-                    error: 'Response kosong dari Blackbox AI'
-                });
-            }
+            if (!result) throw new Error('Response kosong');
 
             res.json({
                 status: true,

@@ -56,19 +56,9 @@
           "path": "/downloader/drive?url="
         },
         {
-          "name": "Pinterest",
-          "desc": "Downloader Pinterest",
-          "path": "/downloader/pindown?url="
-        },
-        {
           "name": "SaveTube",
           "desc": "Download YouTube video/audio",
           "path": "/downloader/savetube?url=&format="
-        },
-        {
-          "name": "SoundCloud Download",
-          "desc": "Download SoundCloud tracks",
-          "path": "/downloader/soundcloud/download?url="
         },
         {
           "name": "Terabox",
@@ -146,9 +136,9 @@
           "path": "/search/komiku?q="
         },
         {
-          "name": "SoundCloud Search",
-          "desc": "Search SoundCloud tracks",
-          "path": "/downloader/soundcloud/search?q="
+          "name": "Pinterest",
+          "desc": "Search foto and video",
+          "path": "/search/pinterest?q="
         },
         {
           "name": "YouTube",

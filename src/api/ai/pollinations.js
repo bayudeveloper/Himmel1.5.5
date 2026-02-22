@@ -5,16 +5,15 @@ module.exports = function(app) {
     /**
      * ENDPOINT: GET /ai/pollinations?prompt=a cat&type=image
      * ENDPOINT: GET /ai/pollinations?prompt=a cat&type=video
-     * Desc: Generate image or video from prompt using Pollinations AI (free, no login)
      * 
      * Query Params:
-     *   - prompt : teks deskripsi yang mau digenerate (wajib)
+     *   - prompt : deskripsi yang mau digenerate (wajib)
      *   - type   : "image" atau "video" (default: image)
-     *   - model  : model yang dipakai (opsional)
-     *   - width  : lebar gambar, default 1024 (khusus image)
-     *   - height : tinggi gambar, default 1024 (khusus image)
-     *   - seed   : seed angka untuk hasil konsisten (opsional)
-     *   - nologo : hilangkan watermark logo, default true
+     *   - model  : model yang dipakai (opsional, khusus image)
+     *   - width  : lebar gambar, default 1024 (opsional)
+     *   - height : tinggi gambar, default 1024 (opsional)
+     *   - seed   : seed angka (opsional)
+     *   - nologo : hilangkan watermark, default true (opsional)
      */
     app.get('/ai/pollinations', async (req, res) => {
         const {
@@ -42,30 +41,17 @@ module.exports = function(app) {
         }
 
         try {
-            if (type === 'image') {
-                // ==================== IMAGE ====================
-                const encodedPrompt = encodeURIComponent(prompt);
+            const encodedPrompt = encodeURIComponent(prompt);
 
-                // Build URL
+            if (type === 'image') {
                 const params = new URLSearchParams();
-                if (width) params.set('width', width);
-                if (height) params.set('height', height);
+                params.set('width', width);
+                params.set('height', height);
+                params.set('nologo', nologo);
                 if (seed) params.set('seed', seed);
-                if (nologo) params.set('nologo', nologo);
                 if (model) params.set('model', model);
 
                 const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?${params.toString()}`;
-
-                // Fetch image untuk pastiin berhasil
-                const response = await axios.get(imageUrl, {
-                    responseType: 'arraybuffer',
-                    timeout: 30000,
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    }
-                });
-
-                const contentType = response.headers['content-type'] || 'image/jpeg';
 
                 return res.json({
                     status: true,
@@ -77,27 +63,13 @@ module.exports = function(app) {
                     url: imageUrl
                 });
 
-            } else if (type === 'video') {
-                // ==================== VIDEO ====================
-                const encodedPrompt = encodeURIComponent(prompt);
-
+            } else {
                 const params = new URLSearchParams();
+                params.set('nologo', nologo);
                 if (seed) params.set('seed', seed);
                 if (model) params.set('model', model);
-                if (nologo) params.set('nologo', nologo);
 
                 const videoUrl = `https://video.pollinations.ai/prompt/${encodedPrompt}?${params.toString()}`;
-
-                // Fetch video untuk pastiin berhasil
-                const response = await axios.get(videoUrl, {
-                    responseType: 'stream',
-                    timeout: 60000,
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    }
-                });
-
-                const contentType = response.headers['content-type'] || 'video/mp4';
 
                 return res.json({
                     status: true,
@@ -116,7 +88,6 @@ module.exports = function(app) {
         }
     });
 
-    // ==================== LIST MODELS ====================
     /**
      * ENDPOINT: GET /ai/pollinations/models
      * Desc: List semua model yang tersedia
@@ -126,7 +97,6 @@ module.exports = function(app) {
             const response = await axios.get('https://image.pollinations.ai/models', {
                 timeout: 10000
             });
-
             res.json({
                 status: true,
                 image_models: response.data,
@@ -137,19 +107,9 @@ module.exports = function(app) {
                 }
             });
         } catch (err) {
-            // Fallback list model
             res.json({
                 status: true,
-                image_models: [
-                    'flux',
-                    'flux-realism',
-                    'flux-cablyai',
-                    'flux-anime',
-                    'flux-3d',
-                    'any-dark',
-                    'flux-pro',
-                    'turbo'
-                ],
+                image_models: ['flux', 'flux-realism', 'flux-cablyai', 'flux-anime', 'flux-3d', 'any-dark', 'flux-pro', 'turbo'],
                 video_models: ['default'],
                 usage: {
                     image: '/ai/pollinations?prompt=anime girl&type=image&model=flux',

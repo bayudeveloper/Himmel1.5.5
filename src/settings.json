@@ -41,9 +41,9 @@
           "path": "/ai/nanana?url=&prompt="
         },
         {
-          "name": "BlackBox",
-          "desc": "BlackBox Chatbot",
-          "path": "/ai/blackbox?text="
+          "name": "Sora 2",
+          "desc": "Video generator",
+          "path": "/ai/sora?prompt="
         }
       ]
     },

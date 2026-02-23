@@ -56,6 +56,11 @@
           "path": "/downloader/drive?url="
         },
         {
+          "name": "Sfile",
+          "desc": "Downloader File",
+          "path": "/downloader/sfile?url="
+        },
+        {
           "name": "SaveTube",
           "desc": "Download YouTube video/audio",
           "path": "/downloader/savetube?url=&format="
@@ -136,6 +141,11 @@
           "path": "/search/komiku?q="
         },
         {
+          "name": "Sfile",
+          "desc": "Search File",
+          "path": "/search/sfile?q="
+        },
+        {
           "name": "YouTube",
           "desc": "Search YouTube videos",
           "path": "/search/youtube?q="
@@ -149,6 +159,11 @@
           "name": "Brat Generator",
           "desc": "Generate Brat-style text images",
           "path": "/tools/brat?text="
+        },
+        {
+          "name": "Upscale",
+          "desc": "make photo resolution better",
+          "path": "/tools/upscale?url="
         },
         {
           "name": "Free Fire Tools",

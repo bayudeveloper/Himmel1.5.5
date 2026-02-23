@@ -100,8 +100,20 @@ function getkukis(cookieStore) {
 }
 
 async function sendcode(cookieStore, email) {
+    // Ambil halaman dulu biar dapat cookie awal
+    const page = await axios.get('https://www.nanobana.net/m/sora2', {
+        headers: soraHeaders,
+        timeout: 15000
+    });
+    extract(cookieStore, page);
+
+    // Kirim OTP dengan cookie
     const res = await axios.post('https://www.nanobana.net/api/auth/email/send', { email }, {
-        headers: { ...soraHeaders, 'Content-Type': 'application/json' },
+        headers: {
+            ...soraHeaders,
+            'Content-Type': 'application/json',
+            Cookie: getkukis(cookieStore)
+        },
         timeout: 15000
     });
     extract(cookieStore, res);

@@ -3,194 +3,205 @@ const crypto = require('crypto');
 
 const delay = ms => new Promise(r => setTimeout(r, ms));
 
-module.exports = function(app) {
-
-    const headers = {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36',
-        'sec-ch-ua': '"Chromium";v="139", "Not;A=Brand";v="99"',
-        'sec-ch-ua-mobile': '?1',
-        'sec-ch-ua-platform': '"Android"',
-        'Accept-Language': 'id-ID,id;q=0.9,en-AU;q=0.8,en;q=0.7,en-US;q=0.6',
-        'origin': 'https://www.nanobana.net',
-        'referer': 'https://www.nanobana.net/m/sora2'
-    };
-
-    function extract(cookieStore, res) {
-        const setC = res.headers['set-cookie'];
-        if (setC) {
-            setC.forEach(c => {
-                const parts = c.split(';')[0].split('=');
-                if (parts.length > 1) {
-                    cookieStore[parts[0]] = parts.slice(1).join('=');
-                }
-            });
-        }
+// ==================== TEMP MAIL (sama persis kayak nanana.js) ====================
+class TempMailScraper {
+    constructor() {
+        this.baseUrl = 'https://akunlama.com';
+        this.headers = {
+            'accept': 'application/json, text/plain, */*',
+            'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+            'referer': 'https://akunlama.com/',
+            'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
+        };
+        this.recipient = crypto.randomBytes(8).toString('hex').substring(0, 10);
+        this.lastCount = 0;
     }
 
-    function getkukis(cookieStore) {
-        return Object.entries(cookieStore).map(([k, v]) => `${k}=${v}`).join('; ');
+    async getEmail() {
+        return `${this.recipient}@akunlama.com`;
     }
 
-    async function cekmail(name) {
-        // Cek apakah email tersedia
-        try {
-            const res = await axios.get(`https://akunlama.com/api/list`, {
-                params: { recipient: name },
-                timeout: 10000
-            });
-            if (Array.isArray(res.data) && res.data.length === 0) {
-                return `${name}@akunlama.com`;
-            }
-            throw new Error('Email taken');
-        } catch (err) {
-            if (err.message === 'Email taken') throw err;
-            return `${name}@akunlama.com`;
-        }
+    async checkInbox() {
+        const response = await axios.get(`${this.baseUrl}/api/list`, {
+            params: { recipient: this.recipient },
+            headers: { ...this.headers, referer: `https://akunlama.com/inbox/${this.recipient}/list` },
+            timeout: 10000
+        });
+        return response.data;
     }
 
-    async function getotp(name) {
-        let code = null;
-        for (let i = 0; i < 24; i++) {
-            await delay(5000);
-            try {
-                const res = await axios.get(`https://akunlama.com/api/list`, {
-                    params: { recipient: name },
-                    timeout: 10000
-                });
-                const mails = res.data;
-                if (Array.isArray(mails) && mails.length > 0) {
-                    for (const m of mails) {
-                        // Cek di subject
-                        const subject = m.message?.headers?.subject || m.subject || '';
-                        let match = subject.match(/Code:\s*(\d{6})/i) || subject.match(/(\d{6})/);
-                        if (match) { code = match[1]; break; }
+    async getMessageContent(msg) {
+        const response = await axios.get(`${this.baseUrl}/api/getHtml`, {
+            params: { region: msg.storage.region, key: msg.storage.key },
+            headers: { ...this.headers, referer: `https://akunlama.com/inbox/${this.recipient}/message/${msg.storage.region}/${msg.storage.key}` },
+            timeout: 10000
+        });
+        return response.data;
+    }
 
-                        // Cek di body/html
-                        const body = m.message?.html || m.message?.text || m.body || m.html || '';
-                        if (body) {
-                            const bodyMatch = body.match(/(\d{6})/);
-                            if (bodyMatch) { code = bodyMatch[1]; break; }
+    extractCode(html) {
+        const match = html.match(/(\d{6})/);
+        return match ? match[1] : null;
+    }
+
+    async waitForCode() {
+        return new Promise((resolve) => {
+            const interval = setInterval(async () => {
+                try {
+                    const inbox = await this.checkInbox();
+                    if (inbox.length > this.lastCount) {
+                        for (const msg of inbox.slice(this.lastCount)) {
+                            const html = await this.getMessageContent(msg);
+                            const code = this.extractCode(html);
+                            if (code) {
+                                clearInterval(interval);
+                                resolve(code);
+                            }
                         }
+                        this.lastCount = inbox.length;
                     }
-                }
-            } catch (e) {}
-            if (code) break;
-        }
-        return code;
-    }
+                } catch (err) {}
+            }, 5000);
 
-    async function sendcode(cookieStore, email) {
-        const res = await axios.post('https://www.nanobana.net/api/auth/email/send', { email }, {
-            headers: { ...headers, 'Content-Type': 'application/json' },
-            timeout: 15000
+            setTimeout(() => {
+                clearInterval(interval);
+                resolve(null);
+            }, 120000);
         });
-        extract(cookieStore, res);
-        return res.data;
     }
+}
 
-    async function getCsrf(cookieStore) {
-        const res = await axios.get('https://www.nanobana.net/api/auth/csrf', {
-            headers: { ...headers, Cookie: getkukis(cookieStore) },
-            timeout: 10000
+// ==================== SORA2 ====================
+const soraHeaders = {
+    'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36',
+    'sec-ch-ua': '"Chromium";v="139", "Not;A=Brand";v="99"',
+    'sec-ch-ua-mobile': '?1',
+    'sec-ch-ua-platform': '"Android"',
+    'Accept-Language': 'id-ID,id;q=0.9,en-AU;q=0.8,en;q=0.7,en-US;q=0.6',
+    'origin': 'https://www.nanobana.net',
+    'referer': 'https://www.nanobana.net/m/sora2'
+};
+
+function extract(cookieStore, res) {
+    const setC = res.headers['set-cookie'];
+    if (setC) {
+        setC.forEach(c => {
+            const parts = c.split(';')[0].split('=');
+            if (parts.length > 1) cookieStore[parts[0]] = parts.slice(1).join('=');
         });
-        extract(cookieStore, res);
-        return res.data.csrfToken;
+    }
+}
+
+function getkukis(cookieStore) {
+    return Object.entries(cookieStore).map(([k, v]) => `${k}=${v}`).join('; ');
+}
+
+async function sendcode(cookieStore, email) {
+    const res = await axios.post('https://www.nanobana.net/api/auth/email/send', { email }, {
+        headers: { ...soraHeaders, 'Content-Type': 'application/json' },
+        timeout: 15000
+    });
+    extract(cookieStore, res);
+    return res.data;
+}
+
+async function getCsrf(cookieStore) {
+    const res = await axios.get('https://www.nanobana.net/api/auth/csrf', {
+        headers: { ...soraHeaders, Cookie: getkukis(cookieStore) },
+        timeout: 10000
+    });
+    extract(cookieStore, res);
+    return res.data.csrfToken;
+}
+
+async function login(cookieStore, email, code, csrfToken) {
+    const data = `email=${encodeURIComponent(email)}&code=${code}&redirect=false&csrfToken=${csrfToken}&callbackUrl=${encodeURIComponent('https://www.nanobana.net/m/sora2')}`;
+    const res = await axios.post('https://www.nanobana.net/api/auth/callback/email-code', data, {
+        headers: { ...soraHeaders, 'Content-Type': 'application/x-www-form-urlencoded', 'x-auth-return-redirect': '1', Cookie: getkukis(cookieStore) },
+        timeout: 15000
+    });
+    extract(cookieStore, res);
+    return res.data;
+}
+
+async function getsesi(cookieStore) {
+    const res = await axios.get('https://www.nanobana.net/api/auth/session', {
+        headers: { ...soraHeaders, Cookie: getkukis(cookieStore) },
+        timeout: 10000
+    });
+    extract(cookieStore, res);
+    return res.data;
+}
+
+async function getuserinfo(cookieStore) {
+    const res = await axios.post('https://www.nanobana.net/api/get-user-info', '', {
+        headers: { ...soraHeaders, Cookie: getkukis(cookieStore) },
+        timeout: 10000
+    });
+    extract(cookieStore, res);
+    return res.data;
+}
+
+async function submitsora(cookieStore, prompt, aspectratio, nFrames) {
+    const res = await axios.post('https://www.nanobana.net/api/sora2/text-to-video/generate',
+        { prompt, aspect_ratio: aspectratio, n_frames: nFrames, remove_watermark: true },
+        { headers: { ...soraHeaders, 'Content-Type': 'application/json', Cookie: getkukis(cookieStore) }, timeout: 30000 }
+    );
+    extract(cookieStore, res);
+    return res.data.taskId;
+}
+
+async function cekstatus(cookieStore, taskId, promptText) {
+    const res = await axios.get(`https://www.nanobana.net/api/sora2/text-to-video/task/${taskId}?save=1&prompt=${encodeURIComponent(promptText)}`, {
+        headers: { ...soraHeaders, Cookie: getkukis(cookieStore) },
+        timeout: 15000
+    });
+    extract(cookieStore, res);
+    return res.data;
+}
+
+async function sora2(prompt, aspect_ratio = 'landscape', n_frames = '10') {
+    const cookieStore = {};
+    const tempMail = new TempMailScraper();
+    const email = await tempMail.getEmail();
+
+    await sendcode(cookieStore, email);
+    const code = await tempMail.waitForCode();
+    if (!code) throw new Error('OTP timeout — email tidak menerima kode dari nanobana.net');
+
+    const csrfToken = await getCsrf(cookieStore);
+    await login(cookieStore, email, code, csrfToken);
+    await getsesi(cookieStore);
+    await getuserinfo(cookieStore);
+
+    const taskId = await submitsora(cookieStore, prompt, aspect_ratio, n_frames);
+    if (!taskId) throw new Error('Gagal mendapatkan Task ID');
+
+    let result;
+    const pendingStatus = ['processing', 'waiting'];
+    do {
+        await delay(5000);
+        result = await cekstatus(cookieStore, taskId, prompt);
+    } while (pendingStatus.includes(result.status));
+
+    if (result.status === 'failed' || result.status === 'error') {
+        throw new Error(`Generate gagal: ${result.error_message || 'Server error / Filtered'}`);
     }
 
-    async function login(cookieStore, email, code, csrfToken) {
-        const data = `email=${encodeURIComponent(email)}&code=${code}&redirect=false&csrfToken=${csrfToken}&callbackUrl=${encodeURIComponent('https://www.nanobana.net/m/sora2')}`;
-        const res = await axios.post('https://www.nanobana.net/api/auth/callback/email-code', data, {
-            headers: {
-                ...headers,
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'x-auth-return-redirect': '1',
-                Cookie: getkukis(cookieStore)
-            },
-            timeout: 15000
-        });
-        extract(cookieStore, res);
-        return res.data;
-    }
+    let videoUrl = null;
+    if (result.resultUrls?.length > 0) videoUrl = result.resultUrls[0];
+    else if (result.saved?.length > 0) videoUrl = result.saved[0].url;
 
-    async function getsesi(cookieStore) {
-        const res = await axios.get('https://www.nanobana.net/api/auth/session', {
-            headers: { ...headers, Cookie: getkukis(cookieStore) },
-            timeout: 10000
-        });
-        extract(cookieStore, res);
-        return res.data;
-    }
+    return { task_id: taskId, video: videoUrl };
+}
 
-    async function getuserinfo(cookieStore) {
-        const res = await axios.post('https://www.nanobana.net/api/get-user-info', '', {
-            headers: { ...headers, Cookie: getkukis(cookieStore) },
-            timeout: 10000
-        });
-        extract(cookieStore, res);
-        return res.data;
-    }
-
-    async function submitsora(cookieStore, prompt, aspectratio, nFrames) {
-        const payload = { prompt, aspect_ratio: aspectratio, n_frames: nFrames, remove_watermark: true };
-        const res = await axios.post('https://www.nanobana.net/api/sora2/text-to-video/generate', payload, {
-            headers: { ...headers, 'Content-Type': 'application/json', Cookie: getkukis(cookieStore) },
-            timeout: 30000
-        });
-        extract(cookieStore, res);
-        return res.data.taskId;
-    }
-
-    async function cekstatus(cookieStore, taskId, promptText) {
-        const url = `https://www.nanobana.net/api/sora2/text-to-video/task/${taskId}?save=1&prompt=${encodeURIComponent(promptText)}`;
-        const res = await axios.get(url, {
-            headers: { ...headers, Cookie: getkukis(cookieStore) },
-            timeout: 15000
-        });
-        extract(cookieStore, res);
-        return res.data;
-    }
-
-    async function sora2(prompt, aspect_ratio = 'landscape', n_frames = '10') {
-        const cookieStore = {};
-        const randomName = crypto.randomBytes(6).toString('hex');
-        const email = await cekmail(randomName);
-
-        await sendcode(cookieStore, email);
-        const code = await getotp(randomName);
-        if (!code) throw new Error('OTP timeout — email tidak menerima kode dari nanobana.net');
-
-        const csrfToken = await getCsrf(cookieStore);
-        await login(cookieStore, email, code, csrfToken);
-        await getsesi(cookieStore);
-        await getuserinfo(cookieStore);
-
-        const taskId = await submitsora(cookieStore, prompt, aspect_ratio, n_frames);
-        if (!taskId) throw new Error('Gagal mendapatkan Task ID');
-
-        let result;
-        const pendingStatus = ['processing', 'waiting'];
-
-        do {
-            await delay(5000);
-            result = await cekstatus(cookieStore, taskId, prompt);
-        } while (pendingStatus.includes(result.status));
-
-        if (result.status === 'failed' || result.status === 'error') {
-            throw new Error(`Generate gagal: ${result.error_message || 'Server error / Filtered'}`);
-        }
-
-        let videoUrl = null;
-        if (result.resultUrls?.length > 0) {
-            videoUrl = result.resultUrls[0];
-        } else if (result.saved?.length > 0) {
-            videoUrl = result.saved[0].url;
-        }
-
-        return { task_id: taskId, video: videoUrl };
-    }
-
+// ==================== ENDPOINT ====================
+module.exports = function(app) {
     /**
-     * ENDPOINT: GET /ai/sora?prompt=a cat&ratio=landscape&frames=10
+     * ENDPOINT: GET /ai/sora?prompt=a cat walking&ratio=landscape&frames=10
      */
     app.get('/ai/sora', async (req, res) => {
         const { prompt, ratio = 'landscape', frames = '10' } = req.query;

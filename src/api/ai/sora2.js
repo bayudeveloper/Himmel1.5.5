@@ -32,28 +32,48 @@ module.exports = function(app) {
     }
 
     async function cekmail(name) {
-        const res = await axios.get(`https://akunlama.com/api/v1/mail/list?recipient=${name}`, { timeout: 10000 });
-        if (Array.isArray(res.data) && res.data.length === 0) {
+        // Cek apakah email tersedia
+        try {
+            const res = await axios.get(`https://akunlama.com/api/list`, {
+                params: { recipient: name },
+                timeout: 10000
+            });
+            if (Array.isArray(res.data) && res.data.length === 0) {
+                return `${name}@akunlama.com`;
+            }
+            throw new Error('Email taken');
+        } catch (err) {
+            if (err.message === 'Email taken') throw err;
             return `${name}@akunlama.com`;
         }
-        throw new Error('Email taken');
     }
 
     async function getotp(name) {
         let code = null;
-        for (let i = 0; i < 20; i++) {
-            await delay(3000);
-            const res = await axios.get(`https://akunlama.com/api/v1/mail/list?recipient=${name}`, { timeout: 10000 });
-            const mails = res.data;
-            if (mails.length > 0) {
-                for (const m of mails) {
-                    const match = m.message?.headers?.subject?.match(/Code:\s*(\d{6})/i);
-                    if (match) {
-                        code = match[1];
-                        break;
+        for (let i = 0; i < 24; i++) {
+            await delay(5000);
+            try {
+                const res = await axios.get(`https://akunlama.com/api/list`, {
+                    params: { recipient: name },
+                    timeout: 10000
+                });
+                const mails = res.data;
+                if (Array.isArray(mails) && mails.length > 0) {
+                    for (const m of mails) {
+                        // Cek di subject
+                        const subject = m.message?.headers?.subject || m.subject || '';
+                        let match = subject.match(/Code:\s*(\d{6})/i) || subject.match(/(\d{6})/);
+                        if (match) { code = match[1]; break; }
+
+                        // Cek di body/html
+                        const body = m.message?.html || m.message?.text || m.body || m.html || '';
+                        if (body) {
+                            const bodyMatch = body.match(/(\d{6})/);
+                            if (bodyMatch) { code = bodyMatch[1]; break; }
+                        }
                     }
                 }
-            }
+            } catch (e) {}
             if (code) break;
         }
         return code;
@@ -80,7 +100,12 @@ module.exports = function(app) {
     async function login(cookieStore, email, code, csrfToken) {
         const data = `email=${encodeURIComponent(email)}&code=${code}&redirect=false&csrfToken=${csrfToken}&callbackUrl=${encodeURIComponent('https://www.nanobana.net/m/sora2')}`;
         const res = await axios.post('https://www.nanobana.net/api/auth/callback/email-code', data, {
-            headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded', 'x-auth-return-redirect': '1', Cookie: getkukis(cookieStore) },
+            headers: {
+                ...headers,
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'x-auth-return-redirect': '1',
+                Cookie: getkukis(cookieStore)
+            },
             timeout: 15000
         });
         extract(cookieStore, res);
@@ -132,7 +157,7 @@ module.exports = function(app) {
 
         await sendcode(cookieStore, email);
         const code = await getotp(randomName);
-        if (!code) throw new Error('OTP timeout, coba lagi');
+        if (!code) throw new Error('OTP timeout — email tidak menerima kode dari nanobana.net');
 
         const csrfToken = await getCsrf(cookieStore);
         await login(cookieStore, email, code, csrfToken);
@@ -155,9 +180,9 @@ module.exports = function(app) {
         }
 
         let videoUrl = null;
-        if (result.resultUrls && result.resultUrls.length > 0) {
+        if (result.resultUrls?.length > 0) {
             videoUrl = result.resultUrls[0];
-        } else if (result.saved && result.saved.length > 0) {
+        } else if (result.saved?.length > 0) {
             videoUrl = result.saved[0].url;
         }
 
@@ -166,12 +191,6 @@ module.exports = function(app) {
 
     /**
      * ENDPOINT: GET /ai/sora?prompt=a cat&ratio=landscape&frames=10
-     * Desc: Generate video dari teks menggunakan Sora2 via nanobana.net
-     *
-     * Query Params:
-     *   - prompt : deskripsi video (wajib)
-     *   - ratio  : aspect ratio — landscape / portrait / square (default: landscape)
-     *   - frames : jumlah frame — 10 / 20 / 30 (default: 10)
      */
     app.get('/ai/sora', async (req, res) => {
         const { prompt, ratio = 'landscape', frames = '10' } = req.query;

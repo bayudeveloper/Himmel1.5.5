@@ -157,7 +157,7 @@ async function generateImage(cookieStore, prompt, model = 'nano-banana') {
     // Coba beberapa kemungkinan endpoint
     const endpoints = [
         { url: 'https://www.nanobana.net/api/nano-banana/text-to-image/generate', body: { prompt, model } },
-        { url: 'https://www.nanobana.net/api/txt2img/generate', body: { prompt, model } },
+        { url: 'https://www.nanobana.net/api/sora2/text-to-image/generate', body: { prompt, model } },
         { url: 'https://www.nanobana.net/api/image/generate', body: { prompt } },
         { url: 'https://www.nanobana.net/api/generate', body: { prompt, type: 'text-to-image' } }
     ];

@@ -31,9 +31,9 @@
       "name": "AI (人工知能)",
       "items": [
         {
-          "name": "HydroMind",
-          "desc": "Talk with hydromind AI",
-          "path": "/ai/hydromind?text=&model="
+          "name": "Text To Image",
+          "desc": "Generate image with text",
+          "path": "/ai/txt2img?prompt="
         },
         {
           "name": "NanoBanana",

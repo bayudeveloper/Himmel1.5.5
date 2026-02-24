@@ -85,8 +85,8 @@ const nanoHeaders = {
     'sec-ch-ua-mobile': '?1',
     'sec-ch-ua-platform': '"Android"',
     'Accept-Language': 'id-ID,id;q=0.9,en-AU;q=0.8,en;q=0.7,en-US;q=0.6',
-    'origin': 'https://www.nanobana.net',
-    'referer': 'https://www.nanobana.net/m/sora2'
+    'origin': 'https://nanobana.net',
+    'referer': 'https://nanobana.net/'
 };
 
 function extract(cookieStore, res) {
@@ -105,14 +105,14 @@ function getkukis(cookieStore) {
 
 async function login(cookieStore, email) {
     // Ambil halaman dulu biar dapat cookie awal
-    const page = await axios.get('https://www.nanobana.net/m/sora2', {
+    const page = await axios.get('https://nanobana.net/', {
         headers: nanoHeaders,
         timeout: 15000
     });
     extract(cookieStore, page);
 
     // Kirim OTP
-    const send = await axios.post('https://www.nanobana.net/api/auth/email/send', { email }, {
+    const send = await axios.post('https://nanobana.net/api/auth/email/send', { email }, {
         headers: { ...nanoHeaders, 'Content-Type': 'application/json', Cookie: getkukis(cookieStore) },
         timeout: 15000
     });
@@ -123,7 +123,7 @@ async function login(cookieStore, email) {
 
 async function verifyOtp(cookieStore, email, code) {
     // Ambil CSRF token
-    const csrf = await axios.get('https://www.nanobana.net/api/auth/csrf', {
+    const csrf = await axios.get('https://nanobana.net/api/auth/csrf', {
         headers: { ...nanoHeaders, Cookie: getkukis(cookieStore) },
         timeout: 10000
     });
@@ -131,8 +131,8 @@ async function verifyOtp(cookieStore, email, code) {
     const csrfToken = csrf.data.csrfToken;
 
     // Login dengan OTP
-    const data = `email=${encodeURIComponent(email)}&code=${code}&redirect=false&csrfToken=${csrfToken}&callbackUrl=${encodeURIComponent('https://www.nanobana.net/m/sora2')}`;
-    const res = await axios.post('https://www.nanobana.net/api/auth/callback/email-code', data, {
+    const data = `email=${encodeURIComponent(email)}&code=${code}&redirect=false&csrfToken=${csrfToken}&callbackUrl=${encodeURIComponent('https://nanobana.net/')}`;
+    const res = await axios.post('https://nanobana.net/api/auth/callback/email-code', data, {
         headers: {
             ...nanoHeaders,
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -144,7 +144,7 @@ async function verifyOtp(cookieStore, email, code) {
     extract(cookieStore, res);
 
     // Get session
-    const sesi = await axios.get('https://www.nanobana.net/api/auth/session', {
+    const sesi = await axios.get('https://nanobana.net/api/auth/session', {
         headers: { ...nanoHeaders, Cookie: getkukis(cookieStore) },
         timeout: 10000
     });
@@ -156,10 +156,10 @@ async function verifyOtp(cookieStore, email, code) {
 async function generateImage(cookieStore, prompt, model = 'nano-banana') {
     // Coba beberapa kemungkinan endpoint
     const endpoints = [
-        { url: 'https://www.nanobana.net/api/sora2/text-to-image/generate', body: { prompt, model } },
-        { url: 'https://www.nanobana.net/api/nano-banana/text-to-image/generate', body: { prompt, model } },
-        { url: 'https://www.nanobana.net/api/txt2img/generate', body: { prompt } },
-        { url: 'https://www.nanobana.net/api/image/generate', body: { prompt } }
+        { url: 'https://nanobana.net/api/generate', body: { prompt, model, type: 'text-to-image', resolution: '1K', output_number: 1 } },
+        { url: 'https://nanobana.net/api/nano-banana/generate', body: { prompt, model, type: 'text-to-image' } },
+        { url: 'https://nanobana.net/api/image/generate', body: { prompt, model } },
+        { url: 'https://nanobana.net/api/txt2img', body: { prompt } }
     ];
 
     for (const ep of endpoints) {
@@ -180,9 +180,9 @@ async function generateImage(cookieStore, prompt, model = 'nano-banana') {
 
 async function checkStatus(cookieStore, taskId, prompt) {
     const endpoints = [
-        `https://www.nanobana.net/api/sora2/text-to-image/task/${taskId}?save=1&prompt=${encodeURIComponent(prompt)}`,
-        `https://www.nanobana.net/api/nano-banana/text-to-image/task/${taskId}?save=1&prompt=${encodeURIComponent(prompt)}`,
-        `https://www.nanobana.net/api/task/${taskId}`
+        `https://nanobana.net/api/task/${taskId}`,
+        `https://nanobana.net/api/generate/status/${taskId}`,
+        `https://nanobana.net/api/result/${taskId}`
     ];
 
     for (const url of endpoints) {

@@ -43,6 +43,10 @@ class TempMailScraper {
     }
 
     extractCode(html) {
+        // Format: "9 1 4 8 7 3" (dipisah spasi)
+        const spaced = html.match(/(\d\s){5}\d/);
+        if (spaced) return spaced[0].replace(/\s/g, '');
+        // Fallback: 6 digit berturutan
         const match = html.match(/(\d{6})/);
         return match ? match[1] : null;
     }

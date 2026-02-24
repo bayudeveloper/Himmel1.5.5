@@ -43,11 +43,9 @@ class TempMailScraper {
     }
 
     extractCode(html) {
-        // Format nanobana: "9 1 4 8 7 3" (dipisah spasi)
         const spaced = html.match(/(\d\s){5}\d/);
         if (spaced) return spaced[0].replace(/\s/g, '');
-        // Fallback 6 digit berturutan
-        const match = html.match(/(\d{6})/);
+        const match = html.match(/\b(\d{6})\b/);
         return match ? match[1] : null;
     }
 
@@ -69,186 +67,142 @@ class TempMailScraper {
                     }
                 } catch (err) {}
             }, 5000);
-
-            setTimeout(() => {
-                clearInterval(interval);
-                resolve(null);
-            }, 120000);
+            setTimeout(() => { clearInterval(interval); resolve(null); }, 120000);
         });
     }
 }
 
-// ==================== NANOBANA ====================
-const nanoHeaders = {
-    'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36',
-    'sec-ch-ua': '"Chromium";v="139", "Not;A=Brand";v="99"',
-    'sec-ch-ua-mobile': '?1',
-    'sec-ch-ua-platform': '"Android"',
-    'Accept-Language': 'id-ID,id;q=0.9,en-AU;q=0.8,en;q=0.7,en-US;q=0.6',
-    'origin': 'https://nanobana.net',
-    'referer': 'https://nanobana.net/'
-};
-
-function extract(cookieStore, res) {
-    const setC = res.headers['set-cookie'];
-    if (setC) {
-        setC.forEach(c => {
-            const parts = c.split(';')[0].split('=');
-            if (parts.length > 1) cookieStore[parts[0]] = parts.slice(1).join('=');
-        });
-    }
-}
-
-function getkukis(cookieStore) {
-    return Object.entries(cookieStore).map(([k, v]) => `${k}=${v}`).join('; ');
-}
-
-async function login(cookieStore, email) {
-    // Ambil halaman dulu biar dapat cookie awal
-    const page = await axios.get('https://nanobana.net/', {
-        headers: nanoHeaders,
-        timeout: 15000
-    });
-    extract(cookieStore, page);
-
-    // Kirim OTP
-    const send = await axios.post('https://nanobana.net/api/auth/email/send', { email }, {
-        headers: { ...nanoHeaders, 'Content-Type': 'application/json', Cookie: getkukis(cookieStore) },
-        timeout: 15000
-    });
-    extract(cookieStore, send);
-
-    return send.data;
-}
-
-async function verifyOtp(cookieStore, email, code) {
-    // Ambil CSRF token
-    const csrf = await axios.get('https://nanobana.net/api/auth/csrf', {
-        headers: { ...nanoHeaders, Cookie: getkukis(cookieStore) },
-        timeout: 10000
-    });
-    extract(cookieStore, csrf);
-    const csrfToken = csrf.data.csrfToken;
-
-    // Login dengan OTP
-    const data = `email=${encodeURIComponent(email)}&code=${code}&redirect=false&csrfToken=${csrfToken}&callbackUrl=${encodeURIComponent('https://nanobana.net/')}`;
-    const res = await axios.post('https://nanobana.net/api/auth/callback/email-code', data, {
-        headers: {
-            ...nanoHeaders,
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'x-auth-return-redirect': '1',
-            Cookie: getkukis(cookieStore)
-        },
-        timeout: 15000
-    });
-    extract(cookieStore, res);
-
-    // Get session
-    const sesi = await axios.get('https://nanobana.net/api/auth/session', {
-        headers: { ...nanoHeaders, Cookie: getkukis(cookieStore) },
-        timeout: 10000
-    });
-    extract(cookieStore, sesi);
-
-    return sesi.data;
-}
-
-async function generateImage(cookieStore, prompt, model = 'nano-banana') {
-    // Coba beberapa kemungkinan endpoint
-    const endpoints = [
-        { url: 'https://nanobana.net/api/generate', body: { prompt, model, type: 'text-to-image', resolution: '1K', output_number: 1 } },
-        { url: 'https://nanobana.net/api/nano-banana/generate', body: { prompt, model, type: 'text-to-image' } },
-        { url: 'https://nanobana.net/api/image/generate', body: { prompt, model } },
-        { url: 'https://nanobana.net/api/txt2img', body: { prompt } }
-    ];
-
-    for (const ep of endpoints) {
-        try {
-            const res = await axios.post(ep.url, ep.body, {
-                headers: { ...nanoHeaders, 'Content-Type': 'application/json', Cookie: getkukis(cookieStore) },
-                timeout: 30000
-            });
-            extract(cookieStore, res);
-            if (res.data && (res.data.taskId || res.data.task_id || res.data.id)) {
-                return { taskId: res.data.taskId || res.data.task_id || res.data.id, endpoint: ep.url };
-            }
-        } catch (e) {}
-    }
-
-    throw new Error('Semua endpoint generate gagal — perlu info endpoint yang benar');
-}
-
-async function checkStatus(cookieStore, taskId, prompt) {
-    const endpoints = [
-        `https://nanobana.net/api/task/${taskId}`,
-        `https://nanobana.net/api/generate/status/${taskId}`,
-        `https://nanobana.net/api/result/${taskId}`
-    ];
-
-    for (const url of endpoints) {
-        try {
-            const res = await axios.get(url, {
-                headers: { ...nanoHeaders, Cookie: getkukis(cookieStore) },
-                timeout: 15000
-            });
-            extract(cookieStore, res);
-            if (res.data) return res.data;
-        } catch (e) {}
-    }
-
-    throw new Error('Gagal cek status task');
-}
-
-async function txt2img(prompt, model = 'nano-banana') {
-    const cookieStore = {};
+// ==================== IDEOGRAM ====================
+async function generateIdeogram(prompt) {
     const tempMail = new TempMailScraper();
     const email = await tempMail.getEmail();
+    const password = 'Idg' + crypto.randomBytes(8).toString('hex') + '1!';
 
-    await login(cookieStore, email);
+    const headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Origin': 'https://ideogram.ai',
+        'Referer': 'https://ideogram.ai/'
+    };
+
+    // Register
+    await axios.post('https://ideogram.ai/api/account/register', {
+        email, password,
+        username: 'user_' + crypto.randomBytes(4).toString('hex')
+    }, { headers, timeout: 15000 });
+
     const code = await tempMail.waitForCode();
-    if (!code) throw new Error('OTP timeout');
+    if (!code) throw new Error('Ideogram: OTP timeout');
 
-    await verifyOtp(cookieStore, email, code);
+    await axios.post('https://ideogram.ai/api/account/verify-email', {
+        email, code
+    }, { headers, timeout: 15000 });
 
-    const { taskId } = await generateImage(cookieStore, prompt, model);
-    if (!taskId) throw new Error('Gagal mendapatkan Task ID');
+    const loginRes = await axios.post('https://ideogram.ai/api/account/login', {
+        email, password
+    }, { headers, timeout: 15000 });
 
-    let result;
-    const pendingStatus = ['processing', 'waiting', 'pending'];
-    let attempts = 0;
+    const token = loginRes.data?.token;
+    const authHeaders = { ...headers, ...(token ? { 'Authorization': `Bearer ${token}` } : {}) };
 
-    do {
-        await delay(5000);
-        result = await checkStatus(cookieStore, taskId, prompt);
-        attempts++;
-        if (attempts > 60) throw new Error('Timeout: gambar tidak selesai dalam 5 menit');
-    } while (pendingStatus.includes(result.status));
+    const genRes = await axios.post('https://ideogram.ai/api/images/sample', {
+        prompt,
+        aspect_ratio: 'ASPECT_1_1',
+        model_version: 'V_2',
+        magic_prompt_option: 'AUTO'
+    }, { headers: authHeaders, timeout: 60000 });
 
-    if (result.status === 'failed' || result.status === 'error') {
-        throw new Error(`Generate gagal: ${result.error_message || 'Unknown error'}`);
+    const images = genRes.data?.response?.data || genRes.data?.data || [];
+    if (!images.length) throw new Error('Ideogram: tidak ada gambar');
+    return images.map(img => img.url || img.image_url).filter(Boolean);
+}
+
+// ==================== TENSOR.ART ====================
+async function generateTensorArt(prompt) {
+    const tempMail = new TempMailScraper();
+    const email = await tempMail.getEmail();
+    const password = 'Tns' + crypto.randomBytes(8).toString('hex') + '1!';
+
+    const headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Origin': 'https://tensor.art',
+        'Referer': 'https://tensor.art/'
+    };
+
+    await axios.post('https://tensor.art/api/user/register', {
+        email, password
+    }, { headers, timeout: 15000 });
+
+    const code = await tempMail.waitForCode();
+    if (!code) throw new Error('TensorArt: OTP timeout');
+
+    await axios.post('https://tensor.art/api/user/verify', {
+        email, code
+    }, { headers, timeout: 15000 });
+
+    const loginRes = await axios.post('https://tensor.art/api/user/login', {
+        email, password
+    }, { headers, timeout: 15000 });
+
+    const token = loginRes.data?.data?.token || loginRes.data?.token;
+    if (!token) throw new Error('TensorArt: login gagal');
+
+    const authHeaders = { ...headers, 'Authorization': `Bearer ${token}` };
+
+    const genRes = await axios.post('https://tensor.art/api/job/create', {
+        stages: [{
+            type: 'INPUT_INITIALIZE',
+            inputInitialize: { seed: -1, count: 1 }
+        }, {
+            type: 'DIFFUSION',
+            diffusion: {
+                width: 512, height: 512,
+                prompts: [{ text: prompt }],
+                negativePrompts: [{ text: 'blurry, bad quality' }],
+                sdModel: '600423083519508503',
+                sdVae: 'ae.safetensors',
+                sampler: 'Euler',
+                steps: 20,
+                cfgScale: 7
+            }
+        }]
+    }, { headers: authHeaders, timeout: 30000 });
+
+    const jobId = genRes.data?.data?.job?.id || genRes.data?.job?.id;
+    if (!jobId) throw new Error('TensorArt: gagal dapat job ID');
+
+    for (let i = 0; i < 60; i++) {
+        await delay(3000);
+        const statusRes = await axios.get(`https://tensor.art/api/job/${jobId}`, {
+            headers: authHeaders, timeout: 10000
+        });
+        const job = statusRes.data?.data?.job || statusRes.data?.job;
+        if (job?.status === 'SUCCESS' || job?.status === 'FINISHED') {
+            const images = job?.images || job?.successInfo?.images || [];
+            return images.map(img => img.url).filter(Boolean);
+        }
+        if (job?.status === 'FAILED') throw new Error('TensorArt: generate gagal');
     }
 
-    let imageUrl = null;
-    if (result.resultUrls?.length > 0) imageUrl = result.resultUrls[0];
-    else if (result.saved?.length > 0) imageUrl = result.saved[0].url;
-    else if (result.url) imageUrl = result.url;
-    else if (result.image) imageUrl = result.image;
-
-    return { task_id: taskId, image: imageUrl };
+    throw new Error('TensorArt: timeout');
 }
 
 // ==================== ENDPOINT ====================
 module.exports = function(app) {
     /**
-     * ENDPOINT: GET /ai/txt2img?prompt=beautiful lake&model=nano-banana
-     * Desc: Generate gambar dari teks menggunakan Nanobana (auto login)
+     * ENDPOINT: GET /ai/txt2img?prompt=beautiful lake
+     * ENDPOINT: GET /ai/txt2img?prompt=beautiful lake&source=ideogram
+     * ENDPOINT: GET /ai/txt2img?prompt=beautiful lake&source=tensorart
      *
      * Query Params:
      *   - prompt : deskripsi gambar (wajib)
-     *   - model  : model yang dipakai (opsional, default: nano-banana)
+     *   - source : "ideogram" / "tensorart" / "auto" (default: auto)
      */
     app.get('/ai/txt2img', async (req, res) => {
-        const { prompt, model = 'nano-banana' } = req.query;
+        const { prompt, source = 'auto' } = req.query;
 
         if (!prompt) {
             return res.status(400).json({
@@ -257,20 +211,38 @@ module.exports = function(app) {
             });
         }
 
-        try {
-            const result = await txt2img(prompt, model);
-            res.json({
-                status: true,
-                prompt,
-                model,
-                task_id: result.task_id,
-                image: result.image
-            });
-        } catch (err) {
-            res.status(500).json({
-                status: false,
-                error: err.message
-            });
+        let images = [];
+        let usedSource = '';
+        let lastError = '';
+
+        if (source === 'ideogram' || source === 'auto') {
+            try {
+                images = await generateIdeogram(prompt);
+                usedSource = 'ideogram';
+            } catch (e) {
+                lastError = `Ideogram: ${e.message}`;
+            }
         }
+
+        if ((source === 'tensorart' || source === 'auto') && images.length === 0) {
+            try {
+                images = await generateTensorArt(prompt);
+                usedSource = 'tensorart';
+            } catch (e) {
+                lastError = `TensorArt: ${e.message}`;
+            }
+        }
+
+        if (images.length === 0) {
+            return res.status(500).json({ status: false, error: lastError || 'Semua source gagal' });
+        }
+
+        res.json({
+            status: true,
+            prompt,
+            source: usedSource,
+            total: images.length,
+            images
+        });
     });
 };
